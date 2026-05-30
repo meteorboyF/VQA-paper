@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# Large binary artifacts (too big for git; cached locally and on Drive)
+artifacts/*.npy
+artifacts/*.pt
+artifacts/*.npy.shards/
+artifacts/*.done.json
+data_processed/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Colab local staging
+/content/
+
+# Results that are too large or auto-generated
+results/E6_vqaconf/vqa_predictions.parquet
+results/E9_grounding/grounding_cache.parquet
+results/E9_grounding/grounding_cache.parquet.shards/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Keep these tracked (small, important for provenance)
+!results/manifest.jsonl
+!results/RESULTS.md
+!results/**/*.json
+!results/figures/*.pdf
+!results/figures/*.png
+!artifacts/.gitkeep

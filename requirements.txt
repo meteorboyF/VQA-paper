@@ -1,0 +1,49 @@
+# Pinned for Google Colab Pro+ (CUDA 12.x, Python 3.10)
+# Install order: torch first, then everything else.
+# pip install -r requirements.txt
+
+# ── Core deep learning ──────────────────────────────────────────────────────
+torch==2.3.1
+torchvision==0.18.1
+torchaudio==2.3.1
+
+# ── HuggingFace ecosystem ───────────────────────────────────────────────────
+transformers==4.44.2
+tokenizers==0.19.1
+accelerate==0.33.0
+datasets==2.21.0
+huggingface-hub==0.24.6
+safetensors==0.4.4
+sentence-transformers==3.0.1
+
+# ── CLIP (OpenCLIP — used for ViT-B/32 loader) ──────────────────────────────
+open-clip-torch==2.26.1
+
+# ── Vision / image processing ───────────────────────────────────────────────
+Pillow==10.4.0
+timm==1.0.9
+
+# ── Data / numerics ─────────────────────────────────────────────────────────
+numpy==1.26.4
+pandas==2.2.2
+pyarrow==17.0.0
+scipy==1.13.1
+scikit-learn==1.5.1
+
+# ── Plotting ────────────────────────────────────────────────────────────────
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# ── NLP (entity extraction for E9) ──────────────────────────────────────────
+spacy==3.7.6
+# After pip install, also run: python -m spacy download en_core_web_sm
+
+# ── Utilities ───────────────────────────────────────────────────────────────
+tqdm==4.66.5
+einops==0.8.0
+ftfy==6.2.3
+regex==2024.7.24
+
+# ── Colab / Drive ───────────────────────────────────────────────────────────
+# google-colab is pre-installed in Colab; listed here for documentation only
+# google-colab==1.0.0

@@ -35,26 +35,26 @@ def mount_drive() -> None:
         drive.mount("/content/drive", force_remount=False)
         print("[env] Drive mounted at /content/drive")
     except ImportError:
-        print("[env] Not in Colab — skipping Drive mount.")
+        print("[env] Not in Colab - skipping Drive mount.")
 
 
 def stage_zip_to_local(zip_path: str, dest_dir: str) -> str:
     """
-    Copy a zip from Drive → local SSD and unzip there.
+    Copy a zip from Drive -> local SSD and unzip there.
     Idempotent: skips if the '.unzipped_ok' marker already exists.
     """
     os.makedirs(dest_dir, exist_ok=True)
     marker = os.path.join(dest_dir, ".unzipped_ok")
     if os.path.exists(marker):
-        print(f"[env] already staged → {dest_dir}")
+        print(f"[env] already staged -> {dest_dir}")
         return dest_dir
     if not os.path.exists(zip_path):
         raise FileNotFoundError(f"[env] zip not found on Drive: {zip_path}")
     local_zip = os.path.join("/content", os.path.basename(zip_path))
     if not os.path.exists(local_zip):
-        print(f"[env] copying {os.path.basename(zip_path)} Drive→local …")
+        print(f"[env] copying {os.path.basename(zip_path)} Drive->local ...")
         shutil.copy(zip_path, local_zip)
-    print(f"[env] unzipping → {dest_dir} …")
+    print(f"[env] unzipping -> {dest_dir} ...")
     with zipfile.ZipFile(local_zip, "r") as z:
         z.extractall(dest_dir)
     open(marker, "w").close()
@@ -84,14 +84,14 @@ def check_gpu(exp_id: str) -> None:
             print("[env] GPU: none (CPU runtime)")
     except ImportError:
         gpu_name = "CPU"
-        print("[env] torch not available — CPU only")
+        print("[env] torch not available - CPU only")
 
     from src.config import GPU_HINTS
     expected = GPU_HINTS.get(exp_id, "any")
     if expected == "CPU":
         return
     if expected not in gpu_name and gpu_name != "CPU":
-        # Warn but don't crash — the experiment can still run
+        # Warn but don't crash - the experiment can still run
         pass
     elif gpu_name == "CPU" and expected != "CPU":
         print(f"[env] WARNING: {exp_id} recommends a {expected} GPU but running on CPU."
@@ -128,7 +128,7 @@ def save_split_ids(cal_idx, rep_idx, out_path: str) -> None:
     obj = {"cal": cal_idx.tolist(), "rep": rep_idx.tolist(), "seed": SEED}
     with open(out_path, "w") as f:
         json.dump(obj, f)
-    print(f"[env] split ids saved → {out_path}")
+    print(f"[env] split ids saved -> {out_path}")
 
 
 def load_split_ids(path: str):
@@ -140,7 +140,7 @@ def load_split_ids(path: str):
 def assert_no_rep_leakage(split_name: str) -> None:
     """
     Call this at the top of any function that selects a threshold or temperature.
-    Raises ValueError if split_name is 'rep' or 'test' — the frozen-knob rule.
+    Raises ValueError if split_name is 'rep' or 'test' - the frozen-knob rule.
     """
     if split_name in ("rep", "test", "report"):
         raise ValueError(

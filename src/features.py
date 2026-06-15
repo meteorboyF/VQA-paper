@@ -1,9 +1,9 @@
 """
-E2 — Multi-backbone feature extraction.
+E2 - Multi-backbone feature extraction.
 
 Extracts frozen image embeddings for CLIP ViT-B/32, DINOv2 ViT-S/14, and
 MobileNetV3-Large. Each backbone is extracted once and cached as float16 .npy
-plus a parquet index. Every later experiment loads the cache — never re-extracts.
+plus a parquet index. Every later experiment loads the cache - never re-extracts.
 
 Idempotent: skips a backbone if its .npy already exists (FORCE_RERUN to override).
 Checkpoints every SHARD_SIZE batches for resume safety.
@@ -127,7 +127,7 @@ def extract(
 
     # Idempotency check
     if os.path.exists(out_npy) and not force:
-        print(f"[features] cache hit → {out_npy}  (use FORCE_RERUN=True to re-extract)")
+        print(f"[features] cache hit -> {out_npy}  (use FORCE_RERUN=True to re-extract)")
         return np.load(out_npy, allow_pickle=False)
 
     shard_dir  = out_npy + ".shards"
@@ -144,7 +144,7 @@ def extract(
     remaining_idx = [i for i in range(n) if i not in done_rows]
 
     if not remaining_idx:
-        print(f"[features] all shards complete for {backbone_name}; assembling…")
+        print(f"[features] all shards complete for {backbone_name}; assembling...")
     else:
         dl = DataLoader(
             ImageDS([paths[i] for i in remaining_idx], preprocess),
@@ -202,7 +202,7 @@ def extract(
 
 def build_feature_index(image_paths, image_names, splits, out_parquet: str):
     """
-    Save a parquet mapping row_idx → image_path → image_name → split,
+    Save a parquet mapping row_idx -> image_path -> image_name -> split,
     so embeddings rows can be aligned to master.parquet rows later.
     """
     import pandas as pd
@@ -214,5 +214,5 @@ def build_feature_index(image_paths, image_names, splits, out_parquet: str):
     })
     os.makedirs(os.path.dirname(out_parquet), exist_ok=True)
     df.to_parquet(out_parquet, index=False)
-    print(f"[features] feature_index saved → {out_parquet}")
+    print(f"[features] feature_index saved -> {out_parquet}")
     return df

@@ -1,11 +1,11 @@
 """
-Statistical helpers — shared by all experiments (§4.5.3–4.5.4).
+Statistical helpers - shared by all experiments (Sec 4.5.3-4.5.4).
 
-multi_seed        — run over SEEDS=[0..4], return mean/std/ci95
-bootstrap_ci      — percentile 95% CI over report samples
-paired_bootstrap_delta — paired test of metric(A)-metric(B), p-value
-benjamini_hochberg — BH-FDR correction for per-defect multi-test
-delong_auroc      — DeLong's test for correlated AUROCs (E9 cross-check)
+multi_seed        - run over SEEDS=[0..4], return mean/std/ci95
+bootstrap_ci      - percentile 95% CI over report samples
+paired_bootstrap_delta - paired test of metric(A)-metric(B), p-value
+benjamini_hochberg - BH-FDR correction for per-defect multi-test
+delong_auroc      - DeLong's test for correlated AUROCs (E9 cross-check)
 """
 import numpy as np
 from sklearn.metrics import roc_auc_score
@@ -61,7 +61,7 @@ def paired_bootstrap_delta(
     """
     Paired test of metric(A) − metric(B) on the SAME resampled indices.
     Returns (delta, lo, hi, p_two_sided).
-    The AURC delta for E7 and the ΔAUROC for E9 are the headline uses.
+    The AURC delta for E7 and the Delta AUROC for E9 are the headline uses.
     """
     rng    = np.random.default_rng(seed)
     n      = len(y)
@@ -78,7 +78,7 @@ def paired_bootstrap_delta(
     return float(deltas.mean()), float(lo), float(hi), float(p)
 
 
-# ── Benjamini–Hochberg FDR correction ────────────────────────────────────────
+# ── Benjamini-Hochberg FDR correction ────────────────────────────────────────
 
 def benjamini_hochberg(pvals, alpha: float = 0.05) -> np.ndarray:
     """
@@ -123,7 +123,7 @@ def delong_auroc(y: np.ndarray, score_a: np.ndarray, score_b: np.ndarray):
     """
     DeLong's test for comparing two correlated AUROCs on the same sample set.
     Returns (auc_a, auc_b, delta_auc, z_stat, p_two_sided).
-    Used as the parametric cross-check for the groundability ΔAUROC in E9/RQ3a.
+    Used as the parametric cross-check for the groundability Delta AUROC in E9/RQ3a.
     """
     from scipy import stats as scipy_stats
 
@@ -136,7 +136,7 @@ def delong_auroc(y: np.ndarray, score_a: np.ndarray, score_b: np.ndarray):
 
     n1, n0 = len(V10_a), len(V01_a)
 
-    S01 = (np.cov(V10_a, V10_b) / n1)   # 2×2 covariance matrix part
+    S01 = (np.cov(V10_a, V10_b) / n1)   # 2x2 covariance matrix part
     S10 = (np.cov(V01_a, V01_b) / n0)
 
     var_a  = np.var(V10_a, ddof=1) / n1 + np.var(V01_a, ddof=1) / n0

@@ -1,13 +1,13 @@
 """
 Model head definitions for triage (binary) and defect diagnosis (multi-label).
-Both heads operate on frozen image embeddings — no backbone fine-tuning.
+Both heads operate on frozen image embeddings - no backbone fine-tuning.
 """
 import torch
 import torch.nn as nn
 
 
 class LinearHead(nn.Module):
-    """Single linear layer — the 'linear probe' baseline."""
+    """Single linear layer - the 'linear probe' baseline."""
     def __init__(self, d_in: int, d_out: int):
         super().__init__()
         self.fc = nn.Linear(d_in, d_out)
@@ -36,7 +36,7 @@ class MLPHead(nn.Module):
 class JointHead(nn.Module):
     """
     Unified multi-task head (C3).
-    Shared trunk → two output branches:
+    Shared trunk -> two output branches:
       - triage:  1 logit  (answerable?)
       - defect:  n_defect logits  (which quality flaw?)
     """

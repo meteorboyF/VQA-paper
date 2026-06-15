@@ -1,10 +1,10 @@
 """
 Calibration utilities (E7).
 
-temperature_scale  — 1-parameter LBFGS on NLL (cal split only).
-ece                — Expected Calibration Error.
-brier_score        — Brier score for binary predictions.
-defect_aware_calibration — per-defect temperature scalers.
+temperature_scale  - 1-parameter LBFGS on NLL (cal split only).
+ece                - Expected Calibration Error.
+brier_score        - Brier score for binary predictions.
+defect_aware_calibration - per-defect temperature scalers.
 
 Frozen-knob rule: temperature T is ALWAYS selected on cal, never on rep.
 All threshold-selection functions assert split=="cal" via env.assert_no_rep_leakage.
@@ -116,9 +116,9 @@ def defect_aware_calibration(
 ) -> dict:
     """
     Fit a separate temperature scalar per defect group on the cal split.
-    confs     — raw (pre-calibration) VQA confidence per sample
-    correct   — binary correctness per sample
-    defect_ids — integer defect label per sample (−1 = no defect)
+    confs     - raw (pre-calibration) VQA confidence per sample
+    correct   - binary correctness per sample
+    defect_ids - integer defect label per sample (−1 = no defect)
     Returns dict: {defect_id: T_float, ...} plus "global" key for the fallback.
 
     Frozen-knob: must be called with split_name="cal".

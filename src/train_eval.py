@@ -205,7 +205,7 @@ def evaluate_multilabel(y_true: np.ndarray, logits: np.ndarray,
     """
     Multi-label defect metrics.
     Returns per-defect AUROC/AUPRC + macro/micro-F1 + mAP.
-    NEVER returns a single 7×7 confusion matrix — uses one-vs-rest 2×2 per defect.
+    NEVER returns a single 7x7 confusion matrix - uses one-vs-rest 2x2 per defect.
     """
     probs = 1 / (1 + np.exp(-logits))
     n_labels = y_true.shape[1]
@@ -223,7 +223,7 @@ def evaluate_multilabel(y_true: np.ndarray, logits: np.ndarray,
         f1_i   = f1_score(yi, preds_i, zero_division=0)
         prec_i = precision_score(yi, preds_i, zero_division=0)
         rec_i  = recall_score(yi, preds_i, zero_division=0)
-        cm_i   = confusion_matrix(yi, preds_i).tolist()   # 2×2
+        cm_i   = confusion_matrix(yi, preds_i).tolist()   # 2x2
         per_defect[name] = dict(AUROC=auroc_i, AUPRC=auprc_i,
                                 F1=f1_i, precision=prec_i, recall=rec_i)
         cms[name] = cm_i
@@ -239,7 +239,7 @@ def evaluate_multilabel(y_true: np.ndarray, logits: np.ndarray,
         per_defect_f1   ={n: per_defect[n]["F1"]     for n in label_names},
         per_defect_prec ={n: per_defect[n]["precision"] for n in label_names},
         per_defect_rec  ={n: per_defect[n]["recall"]  for n in label_names},
-        confusion_matrices_one_vs_rest=cms,   # 2×2 per defect
+        confusion_matrices_one_vs_rest=cms,   # 2x2 per defect
         macro_F1=macro_f1, micro_F1=micro_f1, mAP=mAP,
     )
 
@@ -260,8 +260,8 @@ def run_multi_seed(
 ) -> dict:
     """
     Train `make_model_fn()` for each seed. Returns aggregated stats dict.
-    threshold_fn(y_cal, logits_cal) → threshold(s); must pass split="cal".
-    eval_fn(y_rep, logits_rep, threshold) → metrics dict.
+    threshold_fn(y_cal, logits_cal) -> threshold(s); must pass split="cal".
+    eval_fn(y_rep, logits_rep, threshold) -> metrics dict.
     """
     from src.stats import multi_seed as agg_seeds
     seeds = seeds or config.SEEDS
@@ -280,7 +280,7 @@ def run_multi_seed(
             lc = model(torch.tensor(X_cal, dtype=torch.float32).to(device_t))
             lr = model(torch.tensor(X_rep, dtype=torch.float32).to(device_t))
             if isinstance(lc, tuple):
-                lc, lr = lc[0], lr[0]     # joint head → take triage branch
+                lc, lr = lc[0], lr[0]     # joint head -> take triage branch
             lc = lc.squeeze(-1).float().cpu().numpy()
             lr = lr.squeeze(-1).float().cpu().numpy()
         threshold = threshold_fn(np.array(y_cal), lc)

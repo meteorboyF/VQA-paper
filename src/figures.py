@@ -1,11 +1,11 @@
 """
-Paper figures F1–F10 (§4.8).
+Paper figures F1-F10 (Sec 4.8).
 
 Each function saves PDF+PNG to results/figures/ and returns the saved path.
-reproduce.sh calls all of them from cached metrics JSONs — no GPU required.
+reproduce.sh calls all of them from cached metrics JSONs - no GPU required.
 
 Palette is consistent across all figures. All data figures include error bars
-or CI bands per §4.5.3.
+or CI bands per Sec 4.5.3.
 """
 import os
 import json
@@ -84,7 +84,7 @@ def f1_pipeline_schematic() -> str:
     return _save(fig, "F1_pipeline_schematic")
 
 
-# ── F2: Defect co-occurrence heatmap + answerable × defect contingency ────────
+# ── F2: Defect co-occurrence heatmap + answerable x defect contingency ────────
 
 def f2_cooccurrence(label_stats_path: str) -> str:
     with open(label_stats_path) as f:
@@ -115,7 +115,7 @@ def f2_cooccurrence(label_stats_path: str) -> str:
                     fontsize=6, color="black" if mat[i, j] < 0.3 else "white")
     fig.colorbar(im, ax=ax)
 
-    # Right: answerable × defect contingency (rates)
+    # Right: answerable x defect contingency (rates)
     ax2 = axes[1]
     rates = stats.get("positive_rates", {})
     defect_keys = [f"q_{d}" for d in defects]
@@ -161,7 +161,7 @@ def f3_per_defect_auroc(metrics_by_backbone: dict) -> str:
         ax.set_ylim(0, 1.05)
         ax.axhline(0.5, color="grey", linestyle="--", lw=0.8, label="random")
         ax.legend(fontsize=8)
-        ax.set_title(f"Per-defect {ylabel} by backbone (mean±std, 5 seeds)")
+        ax.set_title(f"Per-defect {ylabel} by backbone (mean+/-std, 5 seeds)")
 
     fig.tight_layout()
     return _save(fig, "F3_per_defect_auroc_auprc")
@@ -238,7 +238,7 @@ def f5_risk_coverage(rc_json_path: str) -> str:
         delta = ga - da
         p_str = f", p={p:.3f}" if p is not None else ""
         ax.text(0.05, 0.95,
-                f"ΔAURC={delta:.4f}{p_str} (global−defect-aware)",
+                f"Delta AURC={delta:.4f}{p_str} (global−defect-aware)",
                 transform=ax.transAxes, fontsize=9, va="top",
                 bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
 
@@ -292,7 +292,7 @@ def f6_arr_frr(arr_frr_json_path: str) -> str:
     return _save(fig, "F6_arr_frr")
 
 
-# ── F7: Backbone comparison table → figure ───────────────────────────────────
+# ── F7: Backbone comparison table -> figure ───────────────────────────────────
 
 def f7_backbone_comparison(metrics_by_backbone: dict) -> str:
     backbones = list(metrics_by_backbone.keys())
@@ -313,7 +313,7 @@ def f7_backbone_comparison(metrics_by_backbone: dict) -> str:
     ax.set_xticks(x); ax.set_xticklabels(metric_keys, fontsize=9)
     ax.set_ylim(0, 1.1); ax.set_ylabel("Score")
     ax.legend(fontsize=9)
-    ax.set_title("Backbone Comparison — Triage + Defect (mean±std, 5 seeds)", fontsize=11)
+    ax.set_title("Backbone Comparison - Triage + Defect (mean+/-std, 5 seeds)", fontsize=11)
     fig.tight_layout()
     return _save(fig, "F7_backbone_comparison")
 
@@ -336,7 +336,7 @@ def f8_roc_panels(triage_roc_data: dict, defect_roc_data: dict) -> str:
         auc = d.get("AUROC", {}).get("mean", 0)
         std = d.get("AUROC", {}).get("std", 0)
         if fpr:
-            ax.plot(fpr, tpr, label=f"{bb} AUC={auc:.3f}±{std:.3f}",
+            ax.plot(fpr, tpr, label=f"{bb} AUC={auc:.3f}+/-{std:.3f}",
                     color=PALETTE.get(bb, "#888"), lw=1.5)
     ax.plot([0, 1], [0, 1], "k--", lw=0.8)
     ax.set_title("Triage ROC", fontsize=9)
@@ -403,7 +403,7 @@ def f9_qualitative_grid(
     for j in range(n, len(axes)):
         axes[j].axis("off")
 
-    fig.suptitle(f"{title}\n(QUAL_SEED=7, sampled by rule — not hand-picked)", fontsize=9)
+    fig.suptitle(f"{title}\n(QUAL_SEED=7, sampled by rule - not hand-picked)", fontsize=9)
     fig.tight_layout()
     return _save(fig, fig_name)
 
@@ -416,7 +416,7 @@ def f10_groundability(triage_delta_json: str, spatial_examples: list = None) -> 
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
-    # Left: ΔAUROC with CI (appearance-only vs. +groundability)
+    # Left: Delta AUROC with CI (appearance-only vs. +groundability)
     ax = axes[0]
     metrics = ["AUROC", "AUPRC"]
     delta_vals  = [data.get(f"delta_{m}", 0)  for m in metrics]
@@ -428,8 +428,8 @@ def f10_groundability(triage_delta_json: str, spatial_examples: list = None) -> 
     ax.barh(metrics, delta_vals, color=colors, alpha=0.8,
             xerr=[errs_lo, errs_hi], capsize=5)
     ax.axvline(0, color="black", lw=1)
-    ax.set_xlabel("Δ (appearance+groundability − appearance-only)")
-    ax.set_title("Triage ΔAUROC/ΔAUPRC with Groundability Feature\n"
+    ax.set_xlabel("Delta  (appearance+groundability − appearance-only)")
+    ax.set_title("Triage Delta AUROC/Delta AUPRC with Groundability Feature\n"
                  "(bootstrap 95% CI, DeLong cross-check)", fontsize=9)
 
     # Right: sample count info
@@ -438,13 +438,13 @@ def f10_groundability(triage_delta_json: str, spatial_examples: list = None) -> 
     summary_lines = [
         f"Subsample N = {data.get('subsample_n','?')}",
         f"Grounder: {data.get('grounder','?')}",
-        f"ΔAUROC = {data.get('delta_AUROC',0):.4f}  p={data.get('delta_AUROC_p','?')}",
+        f"Delta AUROC = {data.get('delta_AUROC',0):.4f}  p={data.get('delta_AUROC_p','?')}",
         f"DeLong z = {data.get('delong_z',0):.3f}  p={data.get('delong_p','?')}",
         f"CI width (AUROC) = {data.get('delta_AUROC_ci_hi',0)-data.get('delta_AUROC_ci_lo',0):.4f}",
     ]
     ax2.text(0.05, 0.9, "\n".join(summary_lines), transform=ax2.transAxes,
              fontsize=9, va="top", family="monospace")
 
-    fig.suptitle("Groundability-Aware Triage (Phase 2 — E9)", fontsize=11)
+    fig.suptitle("Groundability-Aware Triage (Phase 2 - E9)", fontsize=11)
     fig.tight_layout()
     return _save(fig, "F10_groundability")

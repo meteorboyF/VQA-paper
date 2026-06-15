@@ -1,5 +1,5 @@
 """
-E5 — Actionable Recovery metric (contribution C2).
+E5 - Actionable Recovery metric (contribution C2).
 
 ARR (Actionable Recovery Rate): among quality-unanswerable images, the fraction
 where the top predicted defect matches an actual ground-truth flaw.
@@ -7,7 +7,7 @@ where the top predicted defect matches an actual ground-truth flaw.
 FRR (False-Refilm Rate): among answerable images, the fraction wrongly told to
 refilm (i.e., the model predicts a defect on a clean photo).
 
-These two metrics MUST always be reported together — ARR alone is gameable.
+These two metrics MUST always be reported together - ARR alone is gameable.
 """
 import numpy as np
 from src.stats import bootstrap_ci
@@ -20,7 +20,7 @@ DEFECT_TO_ACTION = {
     "obstruction": "Move your finger or object off the lens and retake",
     "framing":     "Step back so the whole item is in frame and retake",
     "rotation":    "Rotate the phone upright and retake",
-    "unrecognizable": "The photo is too unclear — retake in better conditions",
+    "unrecognizable": "The photo is too unclear - retake in better conditions",
 }
 
 DEFECT_ORDER = ["blur", "bright", "dark", "obstruction", "framing",
@@ -53,7 +53,7 @@ def actionable_recovery_rate(
     """
     pred_defect_probs: (N, n_defects) sigmoid probabilities from E4.
     gt_defects:  (N, n_defects) binary ground-truth multi-hot array.
-    answerable:  (N,) binary — 1 = answerable, 0 = quality-unanswerable.
+    answerable:  (N,) binary - 1 = answerable, 0 = quality-unanswerable.
     defect_names: list of defect labels in column order.
 
     Returns dict with ARR, FRR, per-defect breakdown, and bootstrap CIs.
@@ -67,7 +67,7 @@ def actionable_recovery_rate(
     for i in np.where(unanswerable_mask)[0]:
         top = pred_top[i]
         if top is None:
-            # No predicted defect — no actionable advice → not a hit
+            # No predicted defect - no actionable advice -> not a hit
             arr_hits.append(0)
         else:
             defect_idx = defect_names.index(top)

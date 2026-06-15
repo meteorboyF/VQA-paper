@@ -1,11 +1,11 @@
 """
-E9 (Phase 2) — Model-agnostic grounding interface.
+E9 (Phase 2) - Model-agnostic grounding interface.
 
 Primary:  NVIDIA LocateAnything-3B (LA-3B) with its REC prompt template.
-Fallback: Qwen2.5-VL-3B-Instruct — same ground() signature, different backend.
+Fallback: Qwen2.5-VL-3B-Instruct - same ground() signature, different backend.
 
 The harvest loop in E9 calls only ground() and groundability_features().
-Switching the grounder does NOT require changing the harvest loop — set
+Switching the grounder does NOT require changing the harvest loop - set
 config.GROUNDER = "qwen25vl" to activate the fallback.
 
 Negative-Block detection: LA-3B emits a learned "no valid target" abstention.
@@ -213,7 +213,7 @@ def extract_entity(question: str) -> str:
             try:
                 extract_entity._nlp = spacy.load("en_core_web_sm")
             except OSError:
-                # Model not downloaded — fall back to simple heuristic
+                # Model not downloaded - fall back to simple heuristic
                 extract_entity._nlp = None
 
         if extract_entity._nlp is not None:

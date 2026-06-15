@@ -2,12 +2,12 @@
 Experiment result logging.
 
 Every experiment MUST call log_run() before finishing.
-If log_run() wasn't called, the experiment didn't happen (per PIPELINE.md §5).
+If log_run() wasn't called, the experiment didn't happen (per PIPELINE.md Sec 5).
 
 Writes:
-  results/EX_*/  <exp_id>_<git_hash>.json   — full metrics + params
-  results/manifest.jsonl                    — one line per run (provenance)
-  results/RESULTS.md                        — human-readable rolling summary
+  results/EX_*/  <exp_id>_<git_hash>.json   - full metrics + params
+  results/manifest.jsonl                    - one line per run (provenance)
+  results/RESULTS.md                        - human-readable rolling summary
 """
 import json
 import os
@@ -73,7 +73,7 @@ def log_run(
     json_path = os.path.join(results_dir, f"{exp_id}_{git}.json")
     with open(json_path, "w") as f:
         json.dump(rec, f, indent=2, default=str)
-    print(f"[resultlog] → {json_path}")
+    print(f"[resultlog] -> {json_path}")
 
     # Manifest
     if repo_root is None:

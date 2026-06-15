@@ -1,5 +1,5 @@
 """
-E1 — Master data assembly.
+E1 - Master data assembly.
 
 Joins VizWiz-VQA annotations with VizWiz-QualityIssues annotations into a
 single master.parquet keyed by (image, split).
@@ -44,7 +44,7 @@ def _get(obj: dict, *keys, default=None):
 
 def load_quality(split_json: str, split: str) -> pd.DataFrame:
     """
-    Load one QualityIssues split JSON → DataFrame with columns:
+    Load one QualityIssues split JSON -> DataFrame with columns:
     image, q_blur, q_bright, q_dark, q_obstruction, q_framing, q_rotation,
     q_unrecognizable, split.
     """
@@ -52,7 +52,7 @@ def load_quality(split_json: str, split: str) -> pd.DataFrame:
     rows = []
     for it in data:
         image = it[FIELD_MAP_QUALITY["image"]]
-        # The flaws field may be a dict {flaw: 0/1} or a list of flaw names —
+        # The flaws field may be a dict {flaw: 0/1} or a list of flaw names -
         # handle both to be robust against schema variations.
         raw_flaws = _get(it,
                          FIELD_MAP_QUALITY["flaws"],
@@ -80,7 +80,7 @@ def load_quality(split_json: str, split: str) -> pd.DataFrame:
 
 def load_vqa(split_json: str, split: str) -> pd.DataFrame:
     """
-    Load one VQA split JSON → DataFrame with columns:
+    Load one VQA split JSON -> DataFrame with columns:
     image, question, answerable, answers, split.
     """
     data = json.load(open(split_json))
@@ -117,20 +117,20 @@ def build_master(
     qua = pd.concat(qua_frames, ignore_index=True)
 
     # Deduplicate (same image may appear multiple times in VQA with different questions)
-    # Keep all rows — each row is one (image, question) pair.
+    # Keep all rows - each row is one (image, question) pair.
     master = vqa.merge(qua, on=["image", "split"], how="inner")
     master = master.reset_index(drop=True)
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     master.to_parquet(out_path, index=False)
-    print(f"[data_assembly] master.parquet written: {len(master)} rows → {out_path}")
+    print(f"[data_assembly] master.parquet written: {len(master)} rows -> {out_path}")
     return master
 
 
 def label_stats(master: pd.DataFrame, out_path: str) -> dict:
     """
     Compute and save per-label positive rates, co-occurrence matrix,
-    and answerable × defect contingency table.
+    and answerable x defect contingency table.
     """
     import json
 
@@ -152,7 +152,7 @@ def label_stats(master: pd.DataFrame, out_path: str) -> dict:
                 cooccur[key] = float((master[ci] & master[cj]).mean())
     stats["cooccurrence"] = cooccur
 
-    # Answerable × defect contingency
+    # Answerable x defect contingency
     contingency = {}
     for col in flaw_cols:
         ct = pd.crosstab(master["answerable"], master[col])
@@ -166,5 +166,5 @@ def label_stats(master: pd.DataFrame, out_path: str) -> dict:
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(stats, f, indent=2)
-    print(f"[data_assembly] label_stats.json → {out_path}")
+    print(f"[data_assembly] label_stats.json -> {out_path}")
     return stats

@@ -1,5 +1,5 @@
 """
-Central configuration — all paths, seeds, GPU hints, and flags live here.
+Central configuration - all paths, seeds, GPU hints, and flags live here.
 Edit this file (or override in the notebook cell header) before running any experiment.
 """
 import os
@@ -42,7 +42,7 @@ RAW_ZIPS = {
 
 # ── Backbone selection ────────────────────────────────────────────────────────
 # All three loaders are implemented in src/features.py.
-# DINOv2 is commented out by default to save E2 compute budget (~2× cost of CLIP).
+# DINOv2 is commented out by default to save E2 compute budget (~2x cost of CLIP).
 # Flip to True to include it for the full reviewer-grade three-backbone table.
 BACKBONES = ["clip", "mobilenet"]   # "dinov2" opt-in
 # BACKBONES = ["clip", "mobilenet", "dinov2"]   # full table
@@ -75,7 +75,7 @@ COVERAGE_GRID = 50                 # #points for risk-coverage curve
 # ── Phase flags ───────────────────────────────────────────────────────────────
 FORCE_RERUN    = False             # set True to re-compute even if artifact exists
 AUTO_DISCONNECT = False            # set True for fire-and-forget runs (E2, E6, E9)
-RUN_E9         = False             # Phase 2 gate — flip only after E0–E8 committed
+RUN_E9         = False             # Phase 2 gate - flip only after E0-E8 committed
 
 # ── E9 (Phase 2) grounder ─────────────────────────────────────────────────────
 GROUNDER = "locate_anything"       # "locate_anything" | "qwen25vl"

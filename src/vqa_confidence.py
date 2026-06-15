@@ -1,5 +1,5 @@
 """
-E6 — Frozen VQA confidence harvest using ViLT.
+E6 - Frozen VQA confidence harvest using ViLT.
 
 Runs dandelin/vilt-b32-finetuned-vqa (discriminative, clean softmax logits)
 over the dataset once and caches: predicted answer, max-softmax confidence,
@@ -40,12 +40,12 @@ def harvest(
     force: bool = False,
 ) -> pd.DataFrame:
     """
-    records  — list of {image_path, question, answers, image, split, ...}
-    Returns  — DataFrame with original fields + {pred, confidence, correct}
+    records  - list of {image_path, question, answers, image, split, ...}
+    Returns  - DataFrame with original fields + {pred, confidence, correct}
     Checkpoints to out_parquet + ".shards/" every SHARD_ROWS rows.
     """
     if os.path.exists(out_parquet) and not force:
-        print(f"[vqa_confidence] cache hit → {out_parquet}")
+        print(f"[vqa_confidence] cache hit -> {out_parquet}")
         return pd.read_parquet(out_parquet)
 
     shard_dir  = out_parquet + ".shards"
@@ -133,5 +133,5 @@ def harvest(
     df = pd.concat([pd.read_parquet(s) for s in shards], ignore_index=True)
     df = df.drop(columns=["_row_id"], errors="ignore")
     df.to_parquet(out_parquet, index=False)
-    print(f"[vqa_confidence] saved {len(df)} rows → {out_parquet}")
+    print(f"[vqa_confidence] saved {len(df)} rows -> {out_parquet}")
     return df

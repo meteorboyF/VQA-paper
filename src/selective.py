@@ -1,14 +1,18 @@
 """
 Selective prediction utilities (E7 / RQ2).
 
-risk_coverage_curve  — build (coverage, risk) arrays from confidences + correctness.
-aurc                 — Area Under the Risk-Coverage curve.
-coverage_at_risk     — coverage achieved at a given max-risk level.
-global_gate          — single confidence threshold policy.
-defect_conditioned_gate — per-defect threshold policy (the headline C1 result).
+risk_coverage_curve  - build (coverage, risk) arrays from confidences + correctness.
+aurc                 - Area Under the Risk-Coverage curve.
+coverage_at_risk     - coverage achieved at a given max-risk level.
+global_gate          - single confidence threshold policy.
+defect_conditioned_gate - per-defect threshold policy (the headline C1 result).
 """
 import numpy as np
 from src.calibration import ece
+
+# NumPy 2.0 renamed np.trapz -> np.trapezoid. Support both so the AURC
+# computation works whether Colab ships NumPy 1.x or 2.x.
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))
 
 
 # ── Risk-coverage curve ───────────────────────────────────────────────────────
@@ -32,7 +36,7 @@ def risk_coverage_curve(confs: np.ndarray, correct: np.ndarray,
 def aurc(confs: np.ndarray, correct: np.ndarray) -> float:
     """Area Under the Risk-Coverage curve (lower is better)."""
     cov, risk = risk_coverage_curve(confs, correct)
-    return float(np.trapz(risk, cov))
+    return float(_trapz(risk, cov))
 
 
 def coverage_at_risk(confs: np.ndarray, correct: np.ndarray,
@@ -140,5 +144,5 @@ def risk_coverage_for_figure(confs: np.ndarray, correct: np.ndarray,
         label    = label,
         coverage = cov[::step].tolist(),
         risk     = risk[::step].tolist(),
-        aurc     = float(np.trapz(risk, cov)),
+        aurc     = float(_trapz(risk, cov)),
     )

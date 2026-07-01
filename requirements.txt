@@ -1,11 +1,10 @@
-# Pinned for Google Colab Pro+ (CUDA 12.x, Python 3.10)
-# Install order: torch first, then everything else.
+# Pinned for Google Colab Pro+.
+# Keep Colab's preinstalled PyTorch/CUDA stack.
 # pip install -r requirements.txt
 
 # ── Core deep learning ──────────────────────────────────────────────────────
-torch==2.3.1
-torchvision==0.18.1
-torchaudio==2.3.1
+# Use Colab's preinstalled torch/torchvision/torchaudio build.
+# It is matched to the current Python/CUDA runtime; pinning old wheels can fail.
 
 # ── HuggingFace ecosystem ───────────────────────────────────────────────────
 transformers==4.44.2

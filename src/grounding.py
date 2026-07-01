@@ -13,6 +13,7 @@ We detect this and set grounded=False.
 """
 import os
 import json
+import shutil
 import numpy as np
 import torch
 from PIL import Image
@@ -20,6 +21,92 @@ from PIL import Image
 from src import config
 
 _MODEL_CACHE = {}   # singleton cache so we don't reload on every call
+
+
+GROUNDING_FEATURE_COLS = [
+    "grounded", "n_boxes", "max_conf", "box_area_frac",
+    "touches_border", "centeredness",
+]
+
+
+def _atomic_json_dump(obj, path: str) -> None:
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(obj, f)
+    os.replace(tmp, path)
+
+
+def _atomic_parquet_write(df, path: str) -> None:
+    tmp = path + ".tmp"
+    df.to_parquet(tmp, index=False)
+    os.replace(tmp, path)
+
+
+def _quarantine(path: str, reason: str) -> None:
+    bad = path + ".corrupt"
+    print(f"[grounding] corrupt checkpoint ignored: {path} ({reason})")
+    try:
+        if os.path.isdir(path):
+            if os.path.exists(bad):
+                shutil.rmtree(bad, ignore_errors=True)
+            shutil.move(path, bad)
+        elif os.path.exists(path):
+            if os.path.exists(bad):
+                os.remove(bad)
+            os.replace(path, bad)
+    except Exception as exc:
+        print(f"[grounding] warning: could not quarantine {path}: {exc}")
+
+
+def _validate_final_grounding(path: str, expected_ids):
+    import pandas as pd
+    required = {"global_idx", "phrase", "image"} | set(GROUNDING_FEATURE_COLS)
+    expected_ids = {int(i) for i in expected_ids}
+    try:
+        df = pd.read_parquet(path)
+        missing = required - set(df.columns)
+        if missing:
+            raise ValueError(f"missing columns {sorted(missing)}")
+        ids = [int(x) for x in df["global_idx"].tolist()]
+        if len(ids) != len(set(ids)):
+            raise ValueError("duplicate global_idx rows")
+        if set(ids) != expected_ids:
+            raise ValueError(f"id set mismatch: got {len(set(ids))}, expected {len(expected_ids)}")
+        return df
+    except Exception as exc:
+        _quarantine(path, str(exc))
+        return None
+
+
+def _valid_grounding_shards(shard_dir: str, expected_ids):
+    import pandas as pd
+    required = {"global_idx", "phrase", "image"} | set(GROUNDING_FEATURE_COLS)
+    expected_ids = {int(i) for i in expected_ids}
+    valid = []
+    seen = set()
+    for shard_f in sorted(os.listdir(shard_dir)):
+        if not shard_f.startswith("shard_") or not shard_f.endswith(".parquet"):
+            continue
+        shard_path = os.path.join(shard_dir, shard_f)
+        try:
+            df = pd.read_parquet(shard_path)
+            missing = required - set(df.columns)
+            if missing:
+                raise ValueError(f"missing columns {sorted(missing)}")
+            ids = [int(x) for x in df["global_idx"].tolist()]
+            if len(ids) != len(set(ids)):
+                raise ValueError("duplicate global_idx within shard")
+            bad_ids = set(ids) - expected_ids
+            if bad_ids:
+                raise ValueError(f"unexpected global_idx, first={next(iter(bad_ids))}")
+            dup = seen.intersection(ids)
+            if dup:
+                raise ValueError(f"duplicate global_idx across shards, first={next(iter(dup))}")
+            seen.update(ids)
+            valid.append(shard_path)
+        except Exception as exc:
+            _quarantine(shard_path, str(exc))
+    return valid, seen
 
 
 # ── Ground function ──────────────────────────────────────────────────────────
@@ -233,3 +320,112 @@ def extract_entity(question: str) -> str:
         "", question.lower().strip()
     ).strip("?. ")
     return phrase if phrase else question
+
+
+def harvest_grounding(
+    records: list,
+    out_parquet: str,
+    device: str = "cuda",
+    grounder: str = None,
+    force: bool = False,
+    shard_rows: int = 200,
+):
+    """
+    Resume-safe E9 grounding harvest.
+
+    records: list of dicts with keys:
+      global_idx, image, image_path, phrase
+
+    A rerun validates final cache and all shard files, quarantines corrupt
+    checkpoints, and only grounds missing global_idx rows.
+    """
+    import pandas as pd
+    from tqdm.auto import tqdm
+
+    expected_ids = [int(r["global_idx"]) for r in records]
+    if len(expected_ids) != len(set(expected_ids)):
+        raise ValueError("[grounding] records contain duplicate global_idx values")
+
+    shard_dir = out_parquet + ".shards"
+    done_file = out_parquet + ".done.json"
+    if force:
+        for p in (out_parquet, done_file):
+            if os.path.exists(p):
+                os.remove(p)
+        if os.path.isdir(shard_dir):
+            shutil.rmtree(shard_dir)
+    os.makedirs(os.path.dirname(out_parquet), exist_ok=True)
+    os.makedirs(shard_dir, exist_ok=True)
+
+    if os.path.exists(out_parquet) and not force:
+        cached = _validate_final_grounding(out_parquet, expected_ids)
+        if cached is not None:
+            print(f"[grounding] cache hit -> {out_parquet}")
+            return cached
+        print("[grounding] final cache was invalid; resuming/rebuilding from shards")
+
+    valid_shards, done_ids = _valid_grounding_shards(shard_dir, expected_ids)
+    _atomic_json_dump(sorted(done_ids), done_file)
+    pending = [r for r in records if int(r["global_idx"]) not in done_ids]
+    print(f"[grounding] resume state: {len(done_ids)}/{len(records)} rows complete, "
+          f"{len(pending)} remaining")
+
+    existing = [
+        int(f.split("_")[1].split(".")[0])
+        for f in os.listdir(shard_dir)
+        if f.startswith("shard_") and f.endswith(".parquet")
+    ]
+    shard_count = (max(existing) + 1) if existing else 0
+    rows_buf = []
+
+    def _flush():
+        nonlocal shard_count
+        if not rows_buf:
+            return
+        df_shard = pd.DataFrame(rows_buf)
+        shard_path = os.path.join(shard_dir, f"shard_{shard_count:06d}.parquet")
+        _atomic_parquet_write(df_shard, shard_path)
+        done_ids.update(int(x) for x in df_shard["global_idx"].tolist())
+        _atomic_json_dump(sorted(done_ids), done_file)
+        shard_count += 1
+        rows_buf.clear()
+
+    for rec in tqdm(pending, desc="[grounding]", unit="img"):
+        phrase = rec["phrase"]
+        img_path = rec["image_path"]
+        try:
+            img = Image.open(img_path).convert("RGB")
+            w, h = img.size
+        except Exception:
+            img, w, h = None, 224, 224
+
+        if img is not None:
+            g = ground(img, phrase, device=device, grounder=grounder)
+        else:
+            g = {"boxes": [], "conf": 0.0, "grounded": False}
+
+        feat = groundability_features(g, w, h)
+        rows_buf.append({
+            "global_idx": int(rec["global_idx"]),
+            "phrase": phrase,
+            "image": rec.get("image", ""),
+            **feat,
+        })
+        if len(rows_buf) >= shard_rows:
+            _flush()
+    _flush()
+
+    valid_shards, done_ids = _valid_grounding_shards(shard_dir, expected_ids)
+    if len(done_ids) != len(expected_ids):
+        missing = sorted(set(expected_ids) - done_ids)[:10]
+        raise RuntimeError(
+            f"[grounding] cannot assemble: {len(expected_ids)-len(done_ids)} rows "
+            f"still missing. First missing global_idx values: {missing}"
+        )
+    df = pd.concat([pd.read_parquet(p) for p in valid_shards], ignore_index=True)
+    order = {int(gid): i for i, gid in enumerate(expected_ids)}
+    df["_order"] = df["global_idx"].map(order)
+    df = df.sort_values("_order").drop(columns=["_order"]).reset_index(drop=True)
+    _atomic_parquet_write(df, out_parquet)
+    print(f"[grounding] saved {len(df)} rows -> {out_parquet}")
+    return df

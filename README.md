@@ -30,6 +30,24 @@ Read each cell's printed summary before proceeding.
 
 ---
 
+## Where outputs are saved
+
+Open the notebook from GitHub, but keep generated work on Google Drive.
+By default `src/config.py` stores all resumable outputs under:
+
+```text
+/content/drive/MyDrive/VQA_ML/AVA_VizWiz/reliable_vqa_outputs/
+  data_processed/
+  artifacts/
+  results/
+```
+
+After a Colab restart, rerunning cells will find completed Drive caches and
+skip or resume instead of recomputing. Set `VQA_PERSIST_OUTPUTS_TO_DRIVE=0`
+only for local debugging.
+
+---
+
 ## Resuming a crashed cell
 
 Every long cell (E2, E6, E9) checkpoints in shards. Simply re-run the cell —

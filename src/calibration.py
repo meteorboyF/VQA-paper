@@ -32,6 +32,14 @@ def temperature_scale(
     """
     assert_no_rep_leakage(split_name)
 
+    logits = np.asarray(logits, dtype=float)
+    labels = np.asarray(labels)
+    mask = np.isfinite(logits).all(axis=1) if logits.ndim > 1 else np.isfinite(logits)
+    logits = logits[mask]
+    labels = labels[mask]
+    if len(labels) == 0 or len(np.unique(labels)) < 2:
+        return 1.0
+
     logits_t = torch.tensor(logits, dtype=torch.float32)
     labels_t = torch.tensor(labels, dtype=torch.long)
 
@@ -68,6 +76,13 @@ def apply_temperature(logits: np.ndarray, T: float) -> np.ndarray:
 
 def ece(confs: np.ndarray, correct: np.ndarray, n_bins: int = 15) -> float:
     """Expected Calibration Error (confidence-weighted)."""
+    confs = np.asarray(confs, dtype=float)
+    correct = np.asarray(correct, dtype=float)
+    mask = np.isfinite(confs) & np.isfinite(correct)
+    confs = confs[mask]
+    correct = correct[mask]
+    if len(confs) == 0:
+        return float("nan")
     bins = np.linspace(0, 1, n_bins + 1)
     e = 0.0
     for lo, hi in zip(bins[:-1], bins[1:]):
@@ -83,6 +98,11 @@ def ece(confs: np.ndarray, correct: np.ndarray, n_bins: int = 15) -> float:
 def ece_diagram_data(confs: np.ndarray, correct: np.ndarray,
                      n_bins: int = 15) -> dict:
     """Return per-bin data for plotting reliability diagrams."""
+    confs = np.asarray(confs, dtype=float)
+    correct = np.asarray(correct, dtype=float)
+    mask = np.isfinite(confs) & np.isfinite(correct)
+    confs = confs[mask]
+    correct = correct[mask]
     bins = np.linspace(0, 1, n_bins + 1)
     bin_acc, bin_conf, bin_frac = [], [], []
     for lo, hi in zip(bins[:-1], bins[1:]):

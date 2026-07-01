@@ -158,6 +158,99 @@ def train_head(
     return model, best_auroc
 
 
+def train_joint_head(
+    model: nn.Module,
+    X_train: np.ndarray,
+    y_train_answerable: np.ndarray,
+    Y_train_defect: np.ndarray,
+    X_cal: np.ndarray,
+    y_cal_answerable: np.ndarray,
+    Y_cal_defect: np.ndarray,
+    seed: int = 42,
+    lr: float = None,
+    weight_decay: float = None,
+    max_epochs: int = None,
+    patience: int = None,
+    batch_size: int = None,
+    loss_variant: str = "pos_weight",
+    device: str = "cuda",
+    defect_loss_weight: float = 1.0,
+):
+    """
+    Train JointHead with a shared trunk and two losses:
+    answerability BCE + defect multi-label BCE. Early-stop on cal triage AUROC.
+    """
+    env.seed_everything(seed)
+    lr           = lr           or config.LR
+    weight_decay = weight_decay or config.WEIGHT_DECAY
+    max_epochs   = max_epochs   or config.MAX_EPOCHS
+    patience     = patience     or config.PATIENCE
+    batch_size   = batch_size   or config.BATCH_SIZE
+
+    y_ans = np.asarray(y_train_answerable, dtype=np.float32)
+    Y_def = np.asarray(Y_train_defect, dtype=np.float32)
+    ans_pos_w = compute_pos_weight(y_ans.reshape(-1, 1))
+    def_pos_w = compute_pos_weight(Y_def)
+    ans_criterion = build_criterion(loss_variant, ans_pos_w, device)
+    def_criterion = build_criterion(loss_variant, def_pos_w, device)
+
+    model = model.to(device)
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    ds = TensorDataset(
+        torch.tensor(X_train, dtype=torch.float32),
+        torch.tensor(y_ans, dtype=torch.float32),
+        torch.tensor(Y_def, dtype=torch.float32),
+    )
+    dl = DataLoader(ds, batch_size=batch_size, shuffle=True,
+                    num_workers=0, pin_memory=(device != "cpu"))
+
+    X_cal_t = torch.tensor(X_cal, dtype=torch.float32).to(device)
+    y_cal_np = np.asarray(y_cal_answerable, dtype=np.float32)
+
+    best_auroc = -1.0
+    best_state = None
+    patience_ctr = 0
+
+    for _ in range(max_epochs):
+        model.train()
+        for xb, yb_ans, yb_def in dl:
+            xb = xb.to(device)
+            yb_ans = yb_ans.to(device)
+            yb_def = yb_def.to(device)
+            optimizer.zero_grad()
+            with torch.autocast("cuda", dtype=torch.float16, enabled=(device != "cpu")):
+                triage_logits, defect_logits = model(xb)
+                loss_ans = ans_criterion(triage_logits.squeeze(-1), yb_ans)
+                loss_def = def_criterion(defect_logits, yb_def)
+                loss = loss_ans + defect_loss_weight * loss_def
+            loss.backward()
+            optimizer.step()
+
+        model.eval()
+        with torch.inference_mode():
+            cal_triage, _ = model(X_cal_t)
+            cal_logits = cal_triage.squeeze(-1).float().cpu().numpy()
+        try:
+            auroc = roc_auc_score(y_cal_np, cal_logits)
+        except ValueError:
+            auroc = 0.0
+
+        if auroc > best_auroc:
+            best_auroc = auroc
+            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+            patience_ctr = 0
+        else:
+            patience_ctr += 1
+            if patience_ctr >= patience:
+                break
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+    model.eval()
+    return model, best_auroc
+
+
 # ── Threshold selection (cal only) ───────────────────────────────────────────
 
 def find_threshold(y_true: np.ndarray, logits: np.ndarray,
@@ -187,8 +280,14 @@ def evaluate_binary(y_true: np.ndarray, logits: np.ndarray,
     """Binary triage metrics at a frozen threshold."""
     probs = 1 / (1 + np.exp(-logits))
     preds = (probs >= threshold).astype(int)
-    auroc  = roc_auc_score(y_true, probs)
-    auprc  = average_precision_score(y_true, probs)
+    try:
+        auroc = roc_auc_score(y_true, probs)
+    except ValueError:
+        auroc = float("nan")
+    try:
+        auprc = average_precision_score(y_true, probs)
+    except ValueError:
+        auprc = float("nan")
     f1     = f1_score(y_true, preds, zero_division=0)
     prec   = precision_score(y_true, preds, zero_division=0)
     rec    = recall_score(y_true, preds, zero_division=0)

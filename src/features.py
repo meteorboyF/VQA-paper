@@ -10,6 +10,7 @@ Checkpoints every SHARD_SIZE batches for resume safety.
 """
 import os
 import json
+import shutil
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -17,6 +18,89 @@ from PIL import Image
 from tqdm import tqdm
 
 SHARD_SIZE = 500   # save a shard every N batches
+
+KNOWN_DIMS = {
+    "clip": 512,
+    "dinov2": 384,
+    "mobilenet": 960,
+}
+
+
+def _atomic_json_dump(obj, path: str) -> None:
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(obj, f)
+    os.replace(tmp, path)
+
+
+def _atomic_npy_save(path: str, arr: np.ndarray) -> None:
+    tmp = path + ".tmp.npy"
+    np.save(tmp, arr)
+    os.replace(tmp, path)
+
+
+def _quarantine(path: str, reason: str) -> None:
+    bad = path + ".corrupt"
+    print(f"[features] corrupt checkpoint ignored: {path} ({reason})")
+    try:
+        if os.path.isdir(path):
+            if os.path.exists(bad):
+                shutil.rmtree(bad, ignore_errors=True)
+            shutil.move(path, bad)
+        elif os.path.exists(path):
+            if os.path.exists(bad):
+                os.remove(bad)
+            os.replace(path, bad)
+    except Exception as exc:
+        print(f"[features] warning: could not quarantine {path}: {exc}")
+
+
+def _validate_final_npy(path: str, n: int, dim: int):
+    try:
+        arr = np.load(path, allow_pickle=False)
+        if arr.shape != (n, dim):
+            raise ValueError(f"shape {arr.shape} != {(n, dim)}")
+        if arr.dtype != np.float16:
+            raise ValueError(f"dtype {arr.dtype} != float16")
+        if not np.isfinite(arr).all():
+            raise ValueError("contains non-finite values")
+        return arr
+    except Exception as exc:
+        _quarantine(path, str(exc))
+        return None
+
+
+def _valid_feature_shards(shard_dir: str, n: int, dim: int):
+    """Return sorted valid shard records and quarantine corrupt/incomplete pairs."""
+    valid = []
+    seen = set()
+    for shard_f in sorted(os.listdir(shard_dir)):
+        if not shard_f.startswith("shard_") or not shard_f.endswith(".npy"):
+            continue
+        shard_path = os.path.join(shard_dir, shard_f)
+        idx_path = shard_path + ".idx.json"
+        try:
+            if not os.path.exists(idx_path):
+                raise ValueError("missing idx json")
+            arr = np.load(shard_path, allow_pickle=False)
+            idxs = json.load(open(idx_path))
+            if arr.ndim != 2 or arr.shape[1] != dim:
+                raise ValueError(f"bad array shape {arr.shape}")
+            if len(idxs) != arr.shape[0]:
+                raise ValueError(f"idx length {len(idxs)} != rows {arr.shape[0]}")
+            if any((int(i) < 0 or int(i) >= n) for i in idxs):
+                raise ValueError("row id out of range")
+            if not np.isfinite(arr).all():
+                raise ValueError("non-finite values")
+            dup = seen.intersection(int(i) for i in idxs)
+            if dup:
+                raise ValueError(f"duplicate row ids, first={next(iter(dup))}")
+            seen.update(int(i) for i in idxs)
+            valid.append((shard_path, [int(i) for i in idxs]))
+        except Exception as exc:
+            _quarantine(shard_path, str(exc))
+            _quarantine(idx_path, "paired with corrupt shard")
+    return valid, seen
 
 
 # ── Dataset ──────────────────────────────────────────────────────────────────
@@ -125,27 +209,49 @@ def extract(
     paths = list(paths)
     n = len(paths)
 
-    # Idempotency check
-    if os.path.exists(out_npy) and not force:
-        print(f"[features] cache hit -> {out_npy}  (use FORCE_RERUN=True to re-extract)")
-        return np.load(out_npy, allow_pickle=False)
-
     shard_dir  = out_npy + ".shards"
     done_file  = out_npy + ".done_rows.json"
+    if force:
+        for p in (out_npy, done_file):
+            if os.path.exists(p):
+                os.remove(p)
+        if os.path.isdir(shard_dir):
+            shutil.rmtree(shard_dir)
     os.makedirs(os.path.dirname(out_npy), exist_ok=True)
     os.makedirs(shard_dir, exist_ok=True)
 
-    model, preprocess, dim = load_backbone(backbone_name, device)
+    dim = KNOWN_DIMS.get(backbone_name)
 
-    # Load already-finished rows from shards (resume path)
-    done_rows = set()
-    if os.path.exists(done_file):
-        done_rows = set(json.load(open(done_file)))
+    # Idempotency check: trust only a readable, correctly shaped final cache.
+    if os.path.exists(out_npy) and not force and dim is not None:
+        cached = _validate_final_npy(out_npy, n, dim)
+        if cached is not None:
+            print(f"[features] cache hit -> {out_npy}  (use FORCE_RERUN=True to re-extract)")
+            return cached
+        print(f"[features] final cache was invalid; resuming/rebuilding from shards")
+
+    model = preprocess = None
+    if dim is None:
+        model, preprocess, dim = load_backbone(backbone_name, device)
+    if os.path.exists(out_npy) and not force:
+        cached = _validate_final_npy(out_npy, n, dim)
+        if cached is not None:
+            print(f"[features] cache hit -> {out_npy}  (use FORCE_RERUN=True to re-extract)")
+            return cached
+        print(f"[features] final cache was invalid; resuming/rebuilding from shards")
+
+    # Source of truth for resume is readable shards, not the done JSON.
+    valid_shards, done_rows = _valid_feature_shards(shard_dir, n, dim)
+    _atomic_json_dump(sorted(done_rows), done_file)
     remaining_idx = [i for i in range(n) if i not in done_rows]
+    print(f"[features] resume state for {backbone_name}: "
+          f"{len(done_rows)}/{n} rows complete, {len(remaining_idx)} remaining")
 
     if not remaining_idx:
         print(f"[features] all shards complete for {backbone_name}; assembling...")
     else:
+        if model is None or preprocess is None:
+            model, preprocess, dim = load_backbone(backbone_name, device)
         dl = DataLoader(
             ImageDS([paths[i] for i in remaining_idx], preprocess),
             batch_size=bs,
@@ -153,49 +259,46 @@ def extract(
             pin_memory=(device != "cpu"),
             persistent_workers=(num_workers > 0),
         )
-        buf_imgs, buf_orig_idx = [], []
-        shard_count = 0
+        existing = [
+            int(f.split("_")[1].split(".")[0])
+            for f in os.listdir(shard_dir)
+            if f.startswith("shard_") and f.endswith(".npy")
+        ]
+        shard_count = (max(existing) + 1) if existing else 0
 
-        def _flush():
+        def _write_shard(arr, idxs):
             nonlocal shard_count
-            if not buf_imgs:
-                return
-            batch = torch.stack(buf_imgs).to(device, non_blocking=True)
+            shard_path = os.path.join(shard_dir, f"shard_{shard_count:06d}.npy")
+            shard_idx_path = shard_path + ".idx.json"
+            _atomic_npy_save(shard_path, arr)
+            _atomic_json_dump([int(i) for i in idxs], shard_idx_path)
+            done_rows.update(int(i) for i in idxs)
+            _atomic_json_dump(sorted(done_rows), done_file)
+            shard_count += 1
+
+        for (imgs_batch, batch_local_idx) in tqdm(dl, desc=f"[{backbone_name}]"):
+            batch = imgs_batch.to(device, non_blocking=True)
             with torch.autocast("cuda", dtype=torch.float16, enabled=(device != "cpu")):
                 feat = model(batch)
                 feat = torch.nn.functional.normalize(feat, dim=-1)
             arr = feat.float().cpu().numpy().astype(np.float16)
-            shard_path = os.path.join(shard_dir, f"shard_{shard_count:06d}.npy")
-            shard_idx_path = shard_path + ".idx.json"
-            np.save(shard_path, arr)
-            json.dump(buf_orig_idx, open(shard_idx_path, "w"))
-            done_rows.update(buf_orig_idx)
-            json.dump(list(done_rows), open(done_file, "w"))
-            shard_count += 1
-            buf_imgs.clear()
-            buf_orig_idx.clear()
-
-        for (imgs_batch, batch_local_idx) in tqdm(dl, desc=f"[{backbone_name}]"):
-            for local_i, img in zip(batch_local_idx.numpy(), imgs_batch):
-                orig_i = remaining_idx[local_i]
-                buf_imgs.append(img)
-                buf_orig_idx.append(int(orig_i))
-                if len(buf_imgs) >= SHARD_SIZE * bs:
-                    _flush()
-        _flush()
+            idxs = [remaining_idx[int(local_i)] for local_i in batch_local_idx.numpy()]
+            _write_shard(arr, idxs)
 
     # Assemble all shards into final array
     out = np.zeros((n, dim), dtype=np.float16)
-    for shard_f in sorted(os.listdir(shard_dir)):
-        if not shard_f.endswith(".npy"):
-            continue
-        idx_f = os.path.join(shard_dir, shard_f + ".idx.json")
-        shard_path = os.path.join(shard_dir, shard_f)
-        arr  = np.load(shard_path)
-        idxs = json.load(open(idx_f))
+    valid_shards, done_rows = _valid_feature_shards(shard_dir, n, dim)
+    if len(done_rows) != n:
+        missing = sorted(set(range(n)) - done_rows)[:10]
+        raise RuntimeError(
+            f"[features] cannot assemble {backbone_name}: {n-len(done_rows)} rows "
+            f"still missing after extraction. First missing rows: {missing}"
+        )
+    for shard_path, idxs in valid_shards:
+        arr = np.load(shard_path, allow_pickle=False)
         out[idxs] = arr
 
-    np.save(out_npy, out)
+    _atomic_npy_save(out_npy, out)
     print(f"[features] saved {out_npy}  shape={out.shape}  dtype={out.dtype}")
     return out
 

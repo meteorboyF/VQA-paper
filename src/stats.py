@@ -47,9 +47,18 @@ def bootstrap_ci(metric_fn, *arrays, n_boot: int = 2000, seed: int = 42):
     stats = []
     for _ in range(n_boot):
         idx = rng.integers(0, n, n)
-        stats.append(metric_fn(*[a[idx] for a in arrays]))
-    lo, hi = np.percentile(stats, [2.5, 97.5])
-    return float(np.mean(stats)), float(lo), float(hi)
+        try:
+            val = metric_fn(*[a[idx] for a in arrays])
+        except ValueError:
+            val = float("nan")
+        stats.append(val)
+    stats = np.asarray(stats, dtype=float)
+    lo, hi = np.nanpercentile(stats, [2.5, 97.5])
+    try:
+        point = metric_fn(*arrays)
+    except ValueError:
+        point = float("nan")
+    return float(point), float(lo), float(hi)
 
 
 # ── Paired bootstrap delta ────────────────────────────────────────────────────

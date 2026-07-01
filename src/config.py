@@ -11,13 +11,20 @@ QUAL_SEED = 7                      # fixed seed for qualitative figure sampling
 N_BOOT = 2000                      # bootstrap resamples for CIs
 
 # ── Paths ────────────────────────────────────────────────────────────────────
-DRIVE_BASE   = "/content/drive/MyDrive/VQA_ML/AVA_VizWiz"
-LOCAL_BASE   = "/content/local/AVA_VizWiz"
-REPO_ROOT    = "/content/VQA-paper"          # where you git-cloned the repo
+DRIVE_BASE   = os.environ.get("VQA_DRIVE_BASE", "/content/drive/MyDrive/VQA_ML/AVA_VizWiz")
+LOCAL_BASE   = os.environ.get("VQA_LOCAL_BASE", "/content/local/AVA_VizWiz")
+REPO_ROOT    = os.environ.get("VQA_REPO_ROOT", "/content/VQA-paper")          # where you git-cloned the repo
 
-DATA_PROCESSED = os.path.join(REPO_ROOT, "data_processed")
-ARTIFACTS      = os.path.join(REPO_ROOT, "artifacts")
-RESULTS        = os.path.join(REPO_ROOT, "results")
+# Persistent experiment outputs.
+# The notebook/code are refreshed from GitHub in /content/VQA-paper, but all
+# expensive or reportable outputs live on Drive so a Colab restart can resume.
+PERSIST_OUTPUTS_TO_DRIVE = os.environ.get("VQA_PERSIST_OUTPUTS_TO_DRIVE", "1") != "0"
+DRIVE_WORK_DIR = os.environ.get("VQA_DRIVE_WORK_DIR", os.path.join(DRIVE_BASE, "reliable_vqa_outputs"))
+OUTPUT_BASE = DRIVE_WORK_DIR if PERSIST_OUTPUTS_TO_DRIVE else REPO_ROOT
+
+DATA_PROCESSED = os.path.join(OUTPUT_BASE, "data_processed")
+ARTIFACTS      = os.path.join(OUTPUT_BASE, "artifacts")
+RESULTS        = os.path.join(OUTPUT_BASE, "results")
 
 # Sub-dirs for each experiment
 RESULTS_E0 = os.path.join(RESULTS, "E0_audit")
@@ -99,3 +106,23 @@ GPU_HINTS = {
     "E8": "CPU",
     "E9": "L4",
 }
+
+
+def ensure_output_dirs() -> None:
+    """Create persistent output directories used by all experiments."""
+    for d in (
+        DATA_PROCESSED, ARTIFACTS, RESULTS, FIGURES_DIR,
+        RESULTS_E0, RESULTS_E1, RESULTS_E2, RESULTS_E3, RESULTS_E4,
+        RESULTS_E5, RESULTS_E6, RESULTS_E7, RESULTS_E8, RESULTS_E9,
+    ):
+        os.makedirs(d, exist_ok=True)
+
+
+def print_output_locations() -> None:
+    """Print the active persistence layout for Colab sanity checks."""
+    print("[config] Output persistence:")
+    print(f"  PERSIST_OUTPUTS_TO_DRIVE={PERSIST_OUTPUTS_TO_DRIVE}")
+    print(f"  OUTPUT_BASE={OUTPUT_BASE}")
+    print(f"  DATA_PROCESSED={DATA_PROCESSED}")
+    print(f"  ARTIFACTS={ARTIFACTS}")
+    print(f"  RESULTS={RESULTS}")

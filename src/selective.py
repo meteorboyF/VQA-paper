@@ -25,6 +25,13 @@ def risk_coverage_curve(confs: np.ndarray, correct: np.ndarray,
     coverage[k] = fraction of dataset answered after considering top-k.
     risk[k]     = 1 − accuracy among the answered top-k.
     """
+    confs = np.asarray(confs, dtype=float)
+    correct = np.asarray(correct, dtype=float)
+    mask = np.isfinite(confs) & np.isfinite(correct)
+    confs = confs[mask]
+    correct = correct[mask]
+    if len(confs) == 0:
+        return np.array([0.0]), np.array([1.0])
     order  = np.argsort(-confs)
     c      = correct[order].astype(float)
     n      = len(c)

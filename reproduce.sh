@@ -14,7 +14,7 @@ echo "Repo root : $REPO_ROOT"
 echo "Figure dir: $FIG_DIR"
 echo ""
 
-python - <<'PYEOF'
+python - "$FIG_DIR" <<'PYEOF'
 import sys, os, json
 sys.path.insert(0, os.getcwd())
 

@@ -13,7 +13,7 @@ accelerate==0.33.0
 datasets==2.21.0
 huggingface-hub==0.24.6
 safetensors==0.4.4
-sentence-transformers==3.0.1
+# sentence-transformers is not used in the core pipeline.
 
 # ── CLIP (OpenCLIP — used for ViT-B/32 loader) ──────────────────────────────
 open-clip-torch==2.26.1
@@ -31,8 +31,10 @@ timm==1.0.9
 # Use Colab's preinstalled Matplotlib/Seaborn unless local debugging needs pins.
 
 # ── NLP (entity extraction for E9) ──────────────────────────────────────────
-spacy==3.7.6
-# After pip install, also run: python -m spacy download en_core_web_sm
+# spaCy is optional for E9 entity extraction. Do not install it in E0 setup:
+# Colab already ships a compatible NLP stack, and forcing an older spaCy/Thinc
+# build can downgrade NumPy and poison the live kernel. If spaCy is unavailable,
+# src.grounding.extract_entity uses a deterministic fallback.
 
 # ── Utilities ───────────────────────────────────────────────────────────────
 tqdm==4.66.5

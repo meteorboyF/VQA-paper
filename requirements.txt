@@ -23,15 +23,12 @@ Pillow==10.4.0
 timm==1.0.9
 
 # ── Data / numerics ─────────────────────────────────────────────────────────
-numpy==1.26.4
-pandas==2.2.2
-pyarrow==17.0.0
-scipy==1.13.1
-scikit-learn==1.5.1
+# Use Colab's preinstalled NumPy/Pandas/PyArrow/SciPy/Scikit-learn stack.
+# These packages include compiled extensions; downgrading one without the
+# others can produce "numpy.dtype size changed" binary incompatibility errors.
 
 # ── Plotting ────────────────────────────────────────────────────────────────
-matplotlib==3.9.2
-seaborn==0.13.2
+# Use Colab's preinstalled Matplotlib/Seaborn unless local debugging needs pins.
 
 # ── NLP (entity extraction for E9) ──────────────────────────────────────────
 spacy==3.7.6

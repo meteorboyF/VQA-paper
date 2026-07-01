@@ -10,7 +10,16 @@ SEED = 42
 
 def seed_everything(seed: int = SEED) -> None:
     random.seed(seed)
-    np.random.seed(seed)
+    try:
+        np.random.seed(seed)
+    except ValueError as exc:
+        if "numpy.dtype size changed" in str(exc):
+            raise RuntimeError(
+                "NumPy binary stack is inconsistent in this Colab runtime. "
+                "Run the E0 setup cell from the latest GitHub notebook; it now "
+                "repairs and validates NumPy/Pandas/SciPy wheels before E0."
+            ) from exc
+        raise
     try:
         import torch
         torch.manual_seed(seed)

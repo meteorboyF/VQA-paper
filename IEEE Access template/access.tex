@@ -191,7 +191,7 @@ The joined dataset contains 24{,}319 rows, with 20{,}000 training examples and 4
 \subsection{Actionable Recovery}
 \clip{} obtains the highest ungated actionable recovery rate, $\arr$ 0.7196, followed by \dinov{} at 0.6907 and \mobilenet{} at 0.6278. The corresponding ungated false refilm rates are high, near 0.78. As noted in Section~\ref{sec:metrics}, this partly reflects the genuine prevalence of defects among answerable images (framing alone affects 56\% of images), and it should be interpreted as a diagnostic burden proxy rather than a deployed policy. Figure~\ref{fig:arr_frr} breaks ungated recovery down by defect type.
 
-When recovery is gated by the answer/refuse decision, the burden changes substantially. At a 90\% target coverage, \clip{} reaches gated $\arr=0.875$ among refused unanswerable examples while reducing gated $\frr$ to 0.050 on answerable examples. At lower coverage, the system refuses more cases, increasing burden while reducing risk on the answered subset. Table~\ref{tab:gated_recovery} summarizes this deployment-aligned tradeoff.
+When recovery is gated by the answer/refuse decision, the burden changes substantially. At a 90\% target coverage, \clip{} reaches gated $\arr=0.875$ among refused unanswerable examples while reducing gated $\frr$ to 0.050 on answerable examples. At lower coverage, the system refuses more cases, increasing burden while reducing risk on the answered subset. The residual risk on answered examples remains high (0.66--0.73) because the frozen \vilt{} model itself is weak on VizWiz; the gate shifts risk in the right direction, but absolute answer quality is bounded by the underlying VQA model. Table~\ref{tab:gated_recovery} summarizes this deployment-aligned tradeoff.
 
 \begin{figure}[t]
     \centering
@@ -262,9 +262,9 @@ A further diagnostic tests the strongest remaining baseline: the answerability-t
         Confidence + predicted defects (\dinov)     & $-0.0024$ & 0.448 & n.s. \\
         Confidence + predicted defects (\mobilenet) & $+0.0024$ & 0.418 & n.s. \\
         \midrule
-        Triage score alone (\clip)      & $-0.1836$ & 0.000 & worse \\
-        Triage score alone (\dinov)     & $-0.1758$ & 0.000 & worse \\
-        Triage score alone (\mobilenet) & $-0.1849$ & 0.000 & worse \\
+        Triage score alone (\clip)      & $-0.1836$ & $<0.001$ & worse \\
+        Triage score alone (\dinov)     & $-0.1758$ & $<0.001$ & worse \\
+        Triage score alone (\mobilenet) & $-0.1849$ & $<0.001$ & worse \\
         \midrule
         Confidence + triage (\clip)      & $+0.0012$ & 0.168 & n.s. \\
         Confidence + triage (\dinov)     & $-0.0004$ & 0.604 & n.s. \\
@@ -310,6 +310,9 @@ This study uses VizWiz train and validation labels; hidden test answers are not 
 \label{sec:conclusion}
 
 We studied a defect-aware reliability layer for assistive VQA using real answerability and image-quality labels from VizWiz. Lightweight heads on frozen visual backbones can predict answerability and diagnose visual defects, and these predictions support actionable retake guidance. At the same time, defect-aware risk scores, triage-derived risk scores, and full-stack learned combinations do not produce a positive selective-prediction gain over global VQA confidence that survives false-discovery-rate correction. Refusal-gated recovery, however, turns defect diagnosis into a practical user-facing mechanism: at 90\% target coverage, \clip{} gives gated $\arr$ 0.875 with gated $\frr$ 0.050. The resulting lesson is practical: confidence should remain the primary risk-ranking signal, while defect diagnosis should be used to explain refusal and guide recovery.
+
+\section*{Data and Code Availability}
+Both datasets are publicly available from the VizWiz project \cite{vizwizvqaweb,vizwizqualityweb}. The full experiment pipeline (data assembly, training, calibration, selective-prediction diagnostics, recovery metrics, and figure generation), including cached-result manifests with git hashes for every reported number, is available at \url{https://github.com/meteorboyF/VQA-paper}.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

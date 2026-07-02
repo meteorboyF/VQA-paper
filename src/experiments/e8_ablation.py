@@ -23,13 +23,31 @@ def required_artifacts():
     return arts
 
 
+def _ablation_path():
+    return os.path.join(config.RESULTS_E8, "c3_ablation.json")
+
+
+def _ablation_has_backbones(path):
+    try:
+        with open(path) as f:
+            obj = json.load(f)
+    except Exception:
+        return False
+    missing = [bb for bb in config.BACKBONES if bb not in obj]
+    if missing:
+        print(f"[E8] c3_ablation.json missing active backbone(s): {missing}")
+        return False
+    return True
+
+
 def main():
     progress.install_error_hook("E8 ablations/figures")
     env.seed_everything()
     env.mount_drive()
     config.ensure_output_dirs()
 
-    if expstate.is_done(EXP, config.RESULTS_E8, required=required_artifacts()):
+    if (expstate.is_done(EXP, config.RESULTS_E8, required=required_artifacts())
+            and _ablation_has_backbones(_ablation_path())):
         expstate.skip_banner(EXP, config.RESULTS_E8)
         return
 
@@ -54,16 +72,24 @@ def main():
     progress.dataframe_summary("master", master)
     progress.step(pbar, "master and split loaded")
 
-    ablation_path = os.path.join(config.RESULTS_E8, "c3_ablation.json")
+    ablation_path = _ablation_path()
+    ablation_results = {}
     if os.path.exists(ablation_path) and not config.FORCE_RERUN:
         with open(ablation_path) as f:
             ablation_results = json.load(f)
-        print("[E8] cache hit: c3_ablation.json")
-        for bb in ablation_results:
-            progress.step(pbar, f"{bb} C3 ablation cached")
-    else:
-        ablation_results = {}
-        for bb in config.BACKBONES:
+        cached = [bb for bb in config.BACKBONES if bb in ablation_results]
+        if cached:
+            print(f"[E8] c3_ablation cache hit for: {cached}")
+            for bb in cached:
+                progress.step(pbar, f"{bb} C3 ablation cached")
+
+    missing_backbones = [bb for bb in config.BACKBONES if bb not in ablation_results]
+    if missing_backbones or config.FORCE_RERUN:
+        if config.FORCE_RERUN:
+            ablation_results = {}
+            missing_backbones = list(config.BACKBONES)
+        print(f"[E8] Computing C3 ablation for: {missing_backbones}")
+        for bb in missing_backbones:
             emb = np.load(os.path.join(config.ARTIFACTS, f"emb_{bb}.npy")).astype(np.float32)
             y_ans = master["answerable"].values
             Y_def = master[defect_cols].values.astype(np.float32)

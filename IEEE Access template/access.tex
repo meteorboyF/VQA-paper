@@ -17,6 +17,9 @@
 \newcommand{\dinov}{\textsc{DINOv2}}
 \newcommand{\mobilenet}{\textsc{MobileNetV3}}
 \newcommand{\vilt}{\textsc{ViLT}}
+% IEEE Access' custom \Figure macro sets \xfigwd before captions. We use
+% standard figure environments, so provide the default expected by the class.
+\providecommand{\xfigwd}{0pt}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -77,7 +80,7 @@ The VizWiz VQA dataset introduced a goal-oriented VQA benchmark whose images and
 Chiu \emph{et al.} introduced VizWiz-QualityIssues, a dataset of image-quality annotations for images captured by blind users \cite{chiu2020assessing,vizwizqualityweb}. The labels include whether image content is recognizable and which flaws are present. Their work links image-quality assessment to practical vision tasks including captioning and VQA. Our article uses these human defect labels not only as an image-quality prediction task, but also as the basis for refusal explanation and retake guidance.
 
 \subsection{Selective Prediction and Reliable VQA}
-Selective prediction allows a model to answer only when it is sufficiently reliable, trading coverage against risk \cite{elyaniv2010foundations}. Reliable VQA work has applied this idea to VQA systems, showing that softmax confidence can be insufficient and that learned selection functions can improve abstention behavior \cite{whitehead2022reliable,dancette2023improving}. Recent work further studies selectively answering visual questions under uncertainty \cite{eisenschlos2024selectively}. Our experiments differ in focus: we test whether image-quality defect diagnosis improves selective prediction in assistive VQA and find that it does not outperform global VQA confidence for $\aurc$ in our setting.
+Selective prediction allows a model to answer only when it is sufficiently reliable, trading coverage against risk \cite{elyaniv2010foundations}. Reliable VQA work has applied this idea to VQA systems, showing that softmax confidence can be insufficient and that learned selection functions can improve abstention behavior \cite{whitehead2022reliable,dancette2023improving}. Recent work further studies selectively answering visual questions under uncertainty \cite{eisenschlos2024selectively}, identifying unreliable responses from black-box vision-language models via consistency and uncertainty \cite{khan2024consistency}, and reducing unnecessary abstention in vision-language reasoning \cite{srinivasan2024selective}. Our experiments differ in focus: rather than improving the selector itself, we ask what auxiliary image-quality signals add to it, and find that they do not outperform global VQA confidence for $\aurc$ in our setting.
 
 \subsection{Frozen Visual and Vision-Language Models}
 We evaluate frozen visual representations from \clip{} \cite{radford2021clip}, \dinov{} \cite{oquab2023dinov2}, and \mobilenet{} \cite{howard2019mobilenetv3}. We use \vilt{} \cite{kim2021vilt} as a frozen discriminative VQA model to harvest answer predictions and confidence scores. This design keeps the reliability layer lightweight and separates reliability evaluation from VQA model training.

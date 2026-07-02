@@ -101,6 +101,22 @@ def vqa_accuracy(pred: str, answers: list) -> float:
     return min(matches / 3.0, 1.0)
 
 
+def _answer_list(value) -> list:
+    """Normalize parquet/Pandas answer payloads to a plain Python list."""
+    if value is None:
+        return []
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    try:
+        if pd.isna(value):
+            return []
+    except (TypeError, ValueError):
+        pass
+    return [value]
+
+
 # ── Main harvest ──────────────────────────────────────────────────────────────
 
 @torch.inference_mode()
@@ -204,8 +220,8 @@ def harvest(
             preds = [""] * len(batch)
 
         for rec, orig_i, pred, conf in zip(meta, batch_orig_idx, preds, confs):
-            answers = rec.get("answers", [])
-            acc = vqa_accuracy(pred, answers) if answers else float("nan")
+            answers = _answer_list(rec.get("answers", []))
+            acc = vqa_accuracy(pred, answers) if len(answers) else float("nan")
             row = {k: v for k, v in rec.items() if k != "answers"}
             row.update({
                 "_row_id":    orig_i,

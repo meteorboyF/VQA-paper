@@ -51,9 +51,12 @@ for bb in config.BACKBONES:
         with open(p) as f: e7 = json.load(f)
         # F4
         calib_tmp = os.path.join(config.RESULTS_E7, "calib_diag.json")
+        rel_raw = e7.get("reliability",{}).get("raw",{})
+        rel_temp = e7.get("reliability",{}).get("temp",{})
+        rel_raw["ece"] = e7.get("ece_raw")
+        rel_temp["ece"] = e7.get("ece_temp")
         with open(calib_tmp, "w") as f:
-            json.dump({"raw": e7.get("reliability",{}).get("raw",{}),
-                       "temp": e7.get("reliability",{}).get("temp",{})}, f)
+            json.dump({"raw": rel_raw, "temp": rel_temp}, f)
         saved.append(figures.f4_reliability_diagram(calib_tmp))
         # F5
         rc_tmp = os.path.join(config.RESULTS_E7, "rc_data.json")
@@ -79,13 +82,17 @@ combined = {bb: {**e3_by_bb.get(bb,{}), **e4_by_bb.get(bb,{})} for bb in config.
 if combined:
     saved.append(figures.f7_backbone_comparison(combined))
 
-# F8: ROC panels
-from src.data_assembly import QUALITY_FLAWS
-DEFECT_NAMES = QUALITY_FLAWS + ["unrecognizable"]
-saved.append(figures.f8_roc_panels(
-    triage_roc_data={bb: e3_by_bb.get(bb,{}) for bb in config.BACKBONES},
-    defect_roc_data={d: {} for d in DEFECT_NAMES},
-))
+# F8: selective-prediction diagnostic if E7b exists; otherwise legacy ROC panels
+e7b_summary = os.path.join(config.RESULTS, "E7b_diagnostics", "summary.json")
+if os.path.exists(e7b_summary):
+    saved.append(figures.f8_selective_diagnostics(e7b_summary))
+else:
+    from src.data_assembly import QUALITY_FLAWS
+    DEFECT_NAMES = QUALITY_FLAWS + ["unrecognizable"]
+    saved.append(figures.f8_roc_panels(
+        triage_roc_data={bb: e3_by_bb.get(bb,{}) for bb in config.BACKBONES},
+        defect_roc_data={d: {} for d in DEFECT_NAMES},
+    ))
 
 # F10: groundability (Phase 2, if E9 ran)
 p = os.path.join(config.RESULTS_E9, "triage_delta.json")

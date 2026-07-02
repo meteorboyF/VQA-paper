@@ -58,29 +58,33 @@ def _save(fig, name: str) -> str:
 # ── F1: Pipeline schematic (drawn, not data) ─────────────────────────────────
 
 def f1_pipeline_schematic() -> str:
-    fig, ax = plt.subplots(figsize=(12, 3))
+    fig, ax = plt.subplots(figsize=(13, 3.2))
     ax.axis("off")
     boxes = [
-        (0.05, "Image\n(user photo)"),
-        (0.22, "Triage\n(answerable?)"),
-        (0.40, "Diagnose\n(which defect?)"),
-        (0.58, "Calibrate &\nAbstain"),
-        (0.76, "Guide\n(corrective action)"),
+        (0.04, "User photo\n+ question"),
+        (0.20, "Frozen VQA\nconfidence"),
+        (0.36, "Answer /\nrefuse"),
+        (0.52, "Defect\nexplanation"),
+        (0.68, "Retake\nguidance"),
+        (0.84, "Recovery\nmetrics"),
     ]
     arrow_kw = dict(arrowstyle="->", color="black", lw=1.5)
     for i, (x, label) in enumerate(boxes):
         col = list(PALETTE.values())[i % len(PALETTE)]
         ax.add_patch(mpatches.FancyBboxPatch(
-            (x, 0.25), 0.14, 0.50, boxstyle="round,pad=0.02",
+            (x, 0.30), 0.12, 0.42, boxstyle="round,pad=0.02",
             facecolor=col, edgecolor="white", alpha=0.85,
         ))
-        ax.text(x + 0.07, 0.50, label, ha="center", va="center",
-                fontsize=9, color="white", fontweight="bold")
+        ax.text(x + 0.06, 0.51, label, ha="center", va="center",
+                fontsize=8.5, color="white", fontweight="bold")
         if i < len(boxes) - 1:
-            ax.annotate("", xy=(boxes[i + 1][0] + 0.01, 0.50),
-                        xytext=(x + 0.14, 0.50),
+            ax.annotate("", xy=(boxes[i + 1][0] + 0.005, 0.51),
+                        xytext=(x + 0.12, 0.51),
                         arrowprops=arrow_kw)
-    ax.set_title("Reliability Layer Pipeline", fontsize=12, pad=8)
+    ax.text(0.50, 0.12,
+            "Confidence ranks risk; defect diagnosis explains refusals and guides retakes.",
+            ha="center", va="center", fontsize=9)
+    ax.set_title("Assistive VQA Refusal and Recovery Layer", fontsize=12, pad=8)
     return _save(fig, "F1_pipeline_schematic")
 
 
@@ -183,6 +187,13 @@ def f4_reliability_diagram(calib_json_path: str) -> str:
         bin_acc  = d.get("bin_acc",  [])
         bin_frac = d.get("bin_frac", [])
         ece_val  = d.get("ece", float("nan"))
+        if (not np.isfinite(ece_val)) and bin_conf and bin_acc and bin_frac:
+            vals = [
+                float(frac) * abs(float(acc) - float(conf))
+                for conf, acc, frac in zip(bin_conf, bin_acc, bin_frac)
+                if not np.isnan(acc)
+            ]
+            ece_val = float(np.sum(vals)) if vals else float("nan")
         if bin_conf:
             ax.plot([0, 1], [0, 1], "k--", lw=1, label="perfect")
             valid = [(c, a) for c, a in zip(bin_conf, bin_acc)
@@ -244,7 +255,8 @@ def f5_risk_coverage(rc_json_path: str) -> str:
 
     ax.set_xlabel("Coverage"); ax.set_ylabel("Risk (1 − accuracy)")
     ax.set_xlim(0, 1); ax.set_ylim(0, 1)
-    ax.legend(fontsize=9); ax.set_title("Risk-Coverage Curves with CI Bands", fontsize=11)
+    ax.legend(fontsize=9)
+    ax.set_title("Risk-Coverage: Defect-aware Scores Do Not Beat Confidence", fontsize=11)
     fig.tight_layout()
     return _save(fig, "F5_risk_coverage")
 
@@ -319,6 +331,60 @@ def f7_backbone_comparison(metrics_by_backbone: dict) -> str:
 
 
 # ── F8: Triage ROC + per-defect one-vs-rest panels ───────────────────────────
+
+def f8_selective_diagnostics(e7b_summary_path: str) -> str:
+    """Plot E7b AURC improvements.
+
+    Positive values mean lower AURC than global VQA confidence. This figure is
+    intentionally designed to show the revised negative result: defect features
+    do not reliably improve risk ranking over confidence.
+    """
+    with open(e7b_summary_path) as f:
+        summary = json.load(f)
+
+    backbones = list(summary.get("backbones", {}).keys())
+    pred = [summary["backbones"][bb]["predicted_defect_risk_model"] for bb in backbones]
+    oracle = [summary["backbones"][bb]["oracle_gt_defect_risk_model"] for bb in backbones]
+
+    x = np.arange(len(backbones))
+    width = 0.34
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+
+    def vals(rows, key):
+        return np.array([float(r[key]) for r in rows], dtype=float)
+
+    pred_y = vals(pred, "improvement_vs_global")
+    oracle_y = vals(oracle, "improvement_vs_global")
+    pred_lo = pred_y - vals(pred, "ci_lo")
+    pred_hi = vals(pred, "ci_hi") - pred_y
+    oracle_lo = oracle_y - vals(oracle, "ci_lo")
+    oracle_hi = vals(oracle, "ci_hi") - oracle_y
+
+    ax.bar(x - width / 2, pred_y, width, yerr=[pred_lo, pred_hi],
+           label="Predicted-defect risk model", color=PALETTE["defect"],
+           alpha=0.8, capsize=4)
+    ax.bar(x + width / 2, oracle_y, width, yerr=[oracle_lo, oracle_hi],
+           label="Oracle GT-defect risk model", color=PALETTE["random"],
+           alpha=0.8, capsize=4)
+    ax.axhline(0, color="black", lw=1)
+    ax.set_xticks(x)
+    ax.set_xticklabels(backbones)
+    ax.set_ylabel("AURC improvement vs. global confidence\n(positive is better)")
+    ax.set_title("Selective Prediction Diagnostic: Defects Do Not Improve Risk Ranking")
+    ax.legend(fontsize=9)
+
+    for i, r in enumerate(pred):
+        ax.text(x[i] - width / 2, pred_y[i], f"p={float(r['p']):.3f}",
+                ha="center", va="bottom" if pred_y[i] >= 0 else "top",
+                fontsize=8)
+    for i, r in enumerate(oracle):
+        ax.text(x[i] + width / 2, oracle_y[i], f"p={float(r['p']):.3f}",
+                ha="center", va="bottom" if oracle_y[i] >= 0 else "top",
+                fontsize=8)
+
+    fig.tight_layout()
+    return _save(fig, "F8_selective_diagnostics")
+
 
 def f8_roc_panels(triage_roc_data: dict, defect_roc_data: dict) -> str:
     defects = list(defect_roc_data.keys())

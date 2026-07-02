@@ -176,9 +176,12 @@ def main():
             with open(e7_path) as f:
                 e7 = json.load(f)
             calib_tmp = os.path.join(config.RESULTS_E7, "calib_diag.json")
+            rel_raw = e7.get("reliability", {}).get("raw", {})
+            rel_temp = e7.get("reliability", {}).get("temp", {})
+            rel_raw["ece"] = e7.get("ece_raw")
+            rel_temp["ece"] = e7.get("ece_temp")
             with open(calib_tmp, "w") as f:
-                json.dump({"raw": e7.get("reliability", {}).get("raw", {}),
-                           "temp": e7.get("reliability", {}).get("temp", {})}, f)
+                json.dump({"raw": rel_raw, "temp": rel_temp}, f)
             saved.append(figures.f4_reliability_diagram(calib_tmp))
 
             rc_tmp = os.path.join(config.RESULTS_E7, "rc_data.json")
@@ -198,10 +201,14 @@ def main():
         saved.append(figures.f7_backbone_comparison(combined))
     progress.step(pbar, "Figures F1-F7 generated from cached metrics")
 
-    saved.append(figures.f8_roc_panels(
-        triage_roc_data={bb: e3_by_bb.get(bb, {}) for bb in config.BACKBONES},
-        defect_roc_data={d: {} for d in DEFECT_NAMES},
-    ))
+    e7b_summary = os.path.join(config.RESULTS, "E7b_diagnostics", "summary.json")
+    if os.path.exists(e7b_summary):
+        saved.append(figures.f8_selective_diagnostics(e7b_summary))
+    else:
+        saved.append(figures.f8_roc_panels(
+            triage_roc_data={bb: e3_by_bb.get(bb, {}) for bb in config.BACKBONES},
+            defect_roc_data={d: {} for d in DEFECT_NAMES},
+        ))
     print("[E8] F9 requires image paths - run with actual E3/E4 predictions attached.")
 
     print(f"\n[E8 SUMMARY] {len(saved)} figures saved:")

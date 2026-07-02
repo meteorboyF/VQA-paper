@@ -81,30 +81,63 @@ def count_images(directory: str, exts=(".jpg", ".jpeg", ".png", ".JPEG", ".JPG")
     return n
 
 
-def check_gpu(exp_id: str) -> None:
-    """Print current GPU and warn (not crash) if it doesn't match the recommended GPU."""
+def gpu_name() -> str:
     try:
         import torch
         if torch.cuda.is_available():
-            gpu_name = torch.cuda.get_device_name()
-            print(f"[env] GPU: {gpu_name}")
-        else:
-            gpu_name = "CPU"
-            print("[env] GPU: none (CPU runtime)")
+            return torch.cuda.get_device_name()
     except ImportError:
-        gpu_name = "CPU"
-        print("[env] torch not available - CPU only")
-
-    from src.config import GPU_HINTS
-    expected = GPU_HINTS.get(exp_id, "any")
-    if expected == "CPU":
-        return
-    if expected not in gpu_name and gpu_name != "CPU":
-        # Warn but don't crash - the experiment can still run
         pass
-    elif gpu_name == "CPU" and expected != "CPU":
-        print(f"[env] WARNING: {exp_id} recommends a {expected} GPU but running on CPU."
-              f" Computation will be very slow.")
+    return "CPU"
+
+
+def gpu_tier() -> str:
+    """Coarse GPU tier used to scale batch sizes: a100 | l4 | t4 | gpu | cpu."""
+    name = gpu_name().upper()
+    if name == "CPU":
+        return "cpu"
+    if "A100" in name or "H100" in name or "H200" in name or "B200" in name:
+        return "a100"
+    if "L4" in name:
+        return "l4"
+    if "T4" in name:
+        return "t4"
+    return "gpu"
+
+
+def autocast_dtype():
+    """bf16 on Ampere+ (A100/L4), fp16 elsewhere - bf16 avoids overflow issues."""
+    import torch
+    if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+        return torch.bfloat16
+    return torch.float16
+
+
+def setup_cuda_perf() -> None:
+    """Enable TF32 matmuls (big win on A100/L4, no effect on T4/CPU)."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+    except ImportError:
+        pass
+
+
+def check_gpu(exp_id: str) -> None:
+    """Print the current GPU; hard-stop GPU-heavy experiments on CPU runtimes
+    (crawling through E2/E6/E9 on CPU wastes hours and compute units)."""
+    from src.config import GPU_HINTS, GPU_REQUIRED, ALLOW_CPU
+    name = gpu_name()
+    tier = gpu_tier()
+    print(f"[env] GPU: {name} (tier={tier})  recommended for {exp_id}: "
+          f"{GPU_HINTS.get(exp_id, 'any')}")
+    setup_cuda_perf()
+    if name == "CPU" and exp_id in GPU_REQUIRED and not ALLOW_CPU:
+        raise RuntimeError(
+            f"{exp_id} needs a GPU runtime (any of T4/L4/A100). "
+            f"Runtime -> Change runtime type -> GPU, then rerun this cell. "
+            f"(Set VQA_ALLOW_CPU=1 to override for debugging.)")
 
 
 def make_cal_rep_split(val_indices, cal_frac: float = 0.30, seed: int = SEED,

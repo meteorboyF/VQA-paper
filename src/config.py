@@ -49,10 +49,12 @@ RAW_ZIPS = {
 
 # ── Backbone selection ────────────────────────────────────────────────────────
 # All three loaders are implemented in src/features.py.
-# DINOv2 is commented out by default to save E2 compute budget (~2x cost of CLIP).
-# Flip to True to include it for the full reviewer-grade three-backbone table.
-BACKBONES = ["clip", "mobilenet"]   # "dinov2" opt-in
-# BACKBONES = ["clip", "mobilenet", "dinov2"]   # full table
+# DINOv2 is opt-in by default to save E2 compute budget (~2x cost of CLIP).
+# On an A100 the full three-backbone table is cheap: set
+#   os.environ["VQA_BACKBONES"] = "clip,mobilenet,dinov2"  before importing src.
+_bb_env = os.environ.get("VQA_BACKBONES", "").strip()
+BACKBONES = ([b.strip() for b in _bb_env.split(",") if b.strip()]
+             if _bb_env else ["clip", "mobilenet"])
 
 BACKBONE_DIM = {
     "clip":     512,
@@ -79,10 +81,11 @@ ECE_BINS = 15
 # ── Selective prediction ──────────────────────────────────────────────────────
 COVERAGE_GRID = 50                 # #points for risk-coverage curve
 
-# ── Phase flags ───────────────────────────────────────────────────────────────
-FORCE_RERUN    = False             # set True to re-compute even if artifact exists
-AUTO_DISCONNECT = False            # set True for fire-and-forget runs (E2, E6, E9)
-RUN_E9         = False             # Phase 2 gate - flip only after E0-E8 committed
+# ── Phase flags (overridable via env vars so the GitHub notebook never needs
+#    a local file edit: set os.environ[...] in a cell BEFORE importing src) ───
+FORCE_RERUN    = os.environ.get("VQA_FORCE_RERUN", "0") == "1"   # ignore all caches/DONE markers
+AUTO_DISCONNECT = os.environ.get("VQA_AUTO_DISCONNECT", "0") == "1"  # fire-and-forget runs (E2, E6, E9)
+RUN_E9         = os.environ.get("VQA_RUN_E9", "0") == "1"        # Phase 2 gate - flip only after E0-E8 committed
 
 # ── E9 (Phase 2) grounder ─────────────────────────────────────────────────────
 GROUNDER = "locate_anything"       # "locate_anything" | "qwen25vl"
@@ -91,21 +94,44 @@ E9_BATCH_SIZE  = 4                 # VLM inference batch size (memory-bound)
 
 # ── VQA model (E6) ───────────────────────────────────────────────────────────
 VQA_MODEL_ID = "dandelin/vilt-b32-finetuned-vqa"
-VQA_BATCH_SIZE = 32
+VQA_BATCH_SIZE = 32                # fallback; E6 uses batch_size_for("vqa")
 
-# ── Expected GPU per experiment (for the assertion check) ────────────────────
+# ── GPU-tier-aware batch sizes ───────────────────────────────────────────────
+# Any GPU works for any experiment; batches scale with the card so an A100
+# finishes E2/E6 several times faster without OOM risk on a T4.
+BATCH_SIZES = {
+    #            a100  l4   t4   other-gpu  cpu
+    "features": (512,  256, 128, 96,        32),   # E2 backbone extraction
+    "vqa":      (128,  64,  32,  32,        8),    # E6 ViLT harvest
+    "grounder": (16,   8,   4,   4,         1),    # E9 VLM inference
+}
+
+
+def batch_size_for(task: str) -> int:
+    from src.env import gpu_tier
+    tiers = {"a100": 0, "l4": 1, "t4": 2, "gpu": 3, "cpu": 4}
+    a100, l4, t4, other, cpu = BATCH_SIZES[task]
+    return (a100, l4, t4, other, cpu)[tiers.get(gpu_tier(), 3)]
+
+
+# ── Recommended (not required) GPU per experiment ────────────────────────────
+# Purely advisory: every GPU cell runs on any CUDA GPU (A100 > L4 > T4).
 GPU_HINTS = {
     "E0": "CPU",
     "E1": "CPU",
-    "E2": "L4",
-    "E3": "T4",
-    "E4": "T4",
+    "E2": "GPU (A100 or L4 recommended)",
+    "E3": "GPU (any)",
+    "E4": "GPU (any)",
     "E5": "CPU",
-    "E6": "L4",
+    "E6": "GPU (A100 or L4 recommended)",
     "E7": "CPU",
     "E8": "CPU",
-    "E9": "L4",
+    "E9": "GPU (A100 or L4 recommended)",
 }
+
+# Experiments that must not silently crawl on CPU (raise unless VQA_ALLOW_CPU=1).
+GPU_REQUIRED = {"E2", "E6", "E9"}
+ALLOW_CPU = os.environ.get("VQA_ALLOW_CPU", "0") == "1"
 
 
 def ensure_output_dirs() -> None:

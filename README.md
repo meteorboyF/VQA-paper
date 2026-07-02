@@ -8,25 +8,36 @@
 
 ---
 
-## How to run (order matters)
+## How to run
 
-Open `notebooks/reliable_vqa_master.ipynb` in Colab. Run cells **one at a time**.
-Read each cell's printed summary before proceeding.
+Open `notebooks/reliable_vqa_master.ipynb` in Colab (from GitHub). Run the
+**SETUP** cell first on every fresh runtime, then either run cells in order or
+just **Runtime → Run all**: every experiment checks its Drive `DONE.json`
+marker + artifacts and **skips itself instantly if it already completed**.
 
-| Cell | Experiment | Colab runtime | ~Wall-clock |
-|------|-----------|--------------|-------------|
-| E0   | Environment & schema audit | **CPU + High-RAM** | 15–30 min |
-| E1   | Master data assembly | CPU + High-RAM | 5–10 min |
-| E2   | Feature extraction (CLIP + MobileNet) | **L4** | 40–90 min |
-| E3   | Triage head (5-seed) | **T4** | < 10 min |
-| E4   | Defect diagnosis head (5-seed) | **T4** | < 10 min |
+| Cell | Experiment | Colab runtime | ~Wall-clock (first run) |
+|------|-----------|--------------|-------------------------|
+| SETUP | Clone/update repo, install missing deps only | any | 1–3 min |
+| E0   | Environment & schema audit | CPU + High-RAM (or the GPU you'll use next) | 15–30 min (staging) |
+| E1   | Master data assembly | CPU | 5–10 min |
+| E2   | Feature extraction (CLIP + MobileNet) | **GPU — A100 fastest, L4/T4 fine** | A100 ~20–30 min, L4 40–90 min |
+| E3   | Triage head (5-seed) | any GPU | < 10 min |
+| E4   | Defect diagnosis head (5-seed) | any GPU | < 10 min |
 | E5   | Actionable Recovery (ARR/FRR) | CPU | < 5 min |
-| E6   | Frozen ViLT confidence harvest | **L4** | 30–60 min |
-| E7   | Calibration + selective prediction | CPU/T4 | < 10 min |
-| E8   | Ablations + all figures (F1–F9) | CPU/T4 | < 15 min |
-| E9   | Groundability (Phase 2, **GATED**) | L4 | 45–90 min |
+| E6   | Frozen ViLT confidence harvest | **GPU — A100 fastest** | A100 ~15–25 min, L4 30–60 min |
+| E7   | Calibration + selective prediction | CPU/any | < 10 min |
+| E8   | Ablations + all figures (F1–F9) | CPU/any | < 15 min |
+| E9   | Groundability (Phase 2, **GATED**) | GPU | 45–90 min |
 
-**GPU selection:** Runtime → Change runtime type.
+**Cheapest workflow (2 sessions):** (1) CPU High-RAM: SETUP → E0 → E1.
+(2) A100 or L4: SETUP → Run all — E0/E1 skip, E2–E8 run.
+
+Batch sizes auto-scale to the GPU tier (A100 / L4 / T4), with bf16 autocast +
+TF32 on A100/L4. E2/E6/E9 refuse to run on a CPU runtime instead of silently
+crawling for hours (`VQA_ALLOW_CPU=1` overrides for debugging).
+
+For the full reviewer-grade three-backbone table on an A100, set
+`os.environ['VQA_BACKBONES'] = 'clip,mobilenet,dinov2'` in the SETUP cell.
 
 ---
 
@@ -43,7 +54,9 @@ By default `src/config.py` stores all resumable outputs under:
 ```
 
 After a Colab restart, rerunning cells will find completed Drive caches and
-skip or resume instead of recomputing. Set `VQA_PERSIST_OUTPUTS_TO_DRIVE=0`
+skip or resume instead of recomputing. Each experiment writes a `DONE.json`
+marker in its results folder when it finishes; delete that file (or set
+`VQA_FORCE_RERUN=1`) to force a rerun. Set `VQA_PERSIST_OUTPUTS_TO_DRIVE=0`
 only for local debugging.
 
 ---
@@ -72,8 +85,12 @@ Requires Python environment with requirements.txt installed.
 
 ```
 src/
-  config.py         — all paths, seeds, GPU hints, flags
-  env.py            — mount Drive, stage zips, seed, cal/rep split
+  experiments/      — e0_audit.py … e9_grounding.py: ALL experiment logic
+                      (notebook cells are thin wrappers; fixes ship via git pull)
+  config.py         — all paths, seeds, GPU-tier batch sizes, env-var flags
+  expstate.py       — DONE markers: skip-if-done for Run All
+  staging.py        — Drive zip discovery, local staging, image path resolution
+  env.py            — mount Drive, seed, GPU tier/bf16/TF32, cal/rep split
   data_assembly.py  — join VQA + QualityIssues → master.parquet
   features.py       — CLIP / DINOv2 / MobileNet extraction (cache once)
   heads.py          — LinearHead, MLPHead, JointHead

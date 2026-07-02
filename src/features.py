@@ -208,6 +208,9 @@ def extract(
     """
     paths = list(paths)
     n = len(paths)
+    from src.env import autocast_dtype, setup_cuda_perf
+    setup_cuda_perf()
+    ac_dtype = autocast_dtype()
 
     shard_dir  = out_npy + ".shards"
     done_file  = out_npy + ".done_rows.json"
@@ -278,7 +281,7 @@ def extract(
 
         for (imgs_batch, batch_local_idx) in tqdm(dl, desc=f"[{backbone_name}]"):
             batch = imgs_batch.to(device, non_blocking=True)
-            with torch.autocast("cuda", dtype=torch.float16, enabled=(device != "cpu")):
+            with torch.autocast("cuda", dtype=ac_dtype, enabled=(device != "cpu")):
                 feat = model(batch)
                 feat = torch.nn.functional.normalize(feat, dim=-1)
             arr = feat.float().cpu().numpy().astype(np.float16)

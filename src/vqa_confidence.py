@@ -117,6 +117,10 @@ def harvest(
     Returns  - DataFrame with original fields + {pred, confidence, correct}
     Checkpoints to out_parquet + ".shards/" every SHARD_ROWS rows.
     """
+    from src.env import autocast_dtype, setup_cuda_perf
+    setup_cuda_perf()
+    ac_dtype = autocast_dtype()
+
     shard_dir  = out_parquet + ".shards"
     done_file  = out_parquet + ".done.json"
     if force:
@@ -188,7 +192,7 @@ def harvest(
         try:
             enc = proc(images, questions, return_tensors="pt",
                        padding=True, truncation=True, max_length=40).to(device)
-            with torch.autocast("cuda", dtype=torch.float16, enabled=(device != "cpu")):
+            with torch.autocast("cuda", dtype=ac_dtype, enabled=(device != "cpu")):
                 logits = model(**enc).logits          # (B, n_answers)
             prob = logits.softmax(-1)
             confs, idxs = prob.max(-1)

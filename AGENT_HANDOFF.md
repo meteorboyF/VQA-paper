@@ -63,16 +63,20 @@ does grounding the queried entity give a groundability signal + spatial guidance
 
 | Exp | Job | Colab runtime | Notes |
 |-----|-----|---------------|-------|
-| **E0** | Environment & schema audit | **CPU + High-RAM** | Prints real JSON field names; catches the old silent data-loss bug. |
-| **E1** | Master data assembly → `master.parquet` | **CPU + High-RAM** | Pure pandas inner-join on (image, split). |
-| **E2** | Feature extraction (CLIP + MobileNet) | **L4** | Only expensive cell. Cache hard (float16 `.npy`). |
-| **E3** | Triage head (binary, 5-seed) | **T4** | AUROC/AUPRC + 2×2 CM at frozen τ. |
-| **E4** | Defect head (multi-label, 5-seed) | **T4** | per-defect AUROC/AUPRC + mAP + one-vs-rest 2×2. |
+| **E0** | Environment & schema audit | **CPU + High-RAM** (or the GPU used next) | Prints real JSON field names; catches the old silent data-loss bug. |
+| **E1** | Master data assembly → `master.parquet` | **CPU** | Pure pandas inner-join on (image, split). |
+| **E2** | Feature extraction (CLIP + MobileNet) | **GPU — A100 fastest, L4/T4 fine** | Only expensive cell. Cache hard (float16 `.npy`). Batch auto-scales per GPU tier. |
+| **E3** | Triage head (binary, 5-seed) | any GPU | AUROC/AUPRC + 2×2 CM at frozen τ. |
+| **E4** | Defect head (multi-label, 5-seed) | any GPU | per-defect AUROC/AUPRC + mAP + one-vs-rest 2×2. |
 | **E5** | Actionable Recovery (ARR/FRR) | **CPU** | numpy only. |
-| **E6** | Frozen VQA confidence harvest (ViLT) | **L4** | 2nd/last GPU-heavy cell; cache. |
-| **E7** | Calibration + selective prediction | **CPU/T4** | **C1 headline**: paired-bootstrap AURC delta. |
-| **E8** | Ablations (C3, C4) + figures F1–F9 | **CPU/T4** | matplotlib over cached JSON. |
-| **E9** | Groundability (Phase 2) | **L4** | **GATED behind `RUN_E9=False`.** Do not run until E0–E8 committed. |
+| **E6** | Frozen VQA confidence harvest (ViLT) | **GPU — A100 fastest** | 2nd/last GPU-heavy cell; cache. |
+| **E7** | Calibration + selective prediction | **CPU/any** | **C1 headline**: paired-bootstrap AURC delta. |
+| **E8** | Ablations (C3, C4) + figures F1–F9 | **CPU/any** | matplotlib over cached JSON. |
+| **E9** | Groundability (Phase 2) | **GPU (A100/L4)** | **GATED behind `VQA_RUN_E9`.** Do not run until E0–E8 committed. |
+
+GPU-tier batch sizes live in `config.BATCH_SIZES` (A100/L4/T4/other/CPU);
+bf16 autocast + TF32 are enabled automatically on A100/L4. E2/E6/E9 raise on
+CPU runtimes rather than silently crawling (`VQA_ALLOW_CPU=1` overrides).
 
 **Total budget ~8–12 CU for E0–E8**, +~2.5–4.5 CU for the E9 subsample. This holds only if
 features are extracted **once** (rule #1 below) — re-extraction triples the only expensive line.
@@ -89,10 +93,14 @@ VQA-paper/  (https://github.com/meteorboyF/VQA-paper.git, branch main)
 ├── reproduce.sh             # rebuild all figures from cached JSON, no GPU
 ├── requirements.txt         # pinned for Colab CUDA 12.x / Python 3.10
 ├── notebooks/
-│   ├── reliable_vqa_master.ipynb   # THE pipeline: one cell per E0..E9 (banners on top of each)
+│   ├── reliable_vqa_master.ipynb   # THIN cells: SETUP + one `src.experiments.eX.main()` call each
 │   └── smoketest.ipynb             # CPU-only offline test of all src/ modules (run FIRST)
 ├── src/
-│   ├── config.py            # all paths, seeds, flags, BACKBONES, RUN_E9, GROUNDER
+│   ├── experiments/         # e0_audit.py .. e9_grounding.py — ALL experiment logic lives here.
+│   │                        #   Fixes reach the user via `git pull` in SETUP; notebook never changes.
+│   ├── expstate.py          # DONE.json markers → skip-if-done for "Run all"
+│   ├── staging.py           # Drive zip discovery, local staging, image-path resolution
+│   ├── config.py            # all paths, seeds, flags, BACKBONES, RUN_E9, GROUNDER, BATCH_SIZES
 │   ├── env.py               # mount Drive, stage zips, seed, cal/rep split, frozen-knob assert
 │   ├── data_assembly.py     # join VQA+Quality → master.parquet (FIELD_MAP_* adapt to E0 audit)
 │   ├── features.py          # CLIP/DINOv2/MobileNet extraction, shard+cache+resume
@@ -167,19 +175,22 @@ This catches Python/logic errors **before** spending any compute units.
 → If a check fails, the user pastes the traceback; we fix the `src/` module, push, they re-pull.
 
 ### Step 1 — Core pipeline (E0→E8)
-Open **`notebooks/reliable_vqa_master.ipynb`**. Each cell has a banner stating its runtime.
-Run in order, switching runtime per banner:
-- **CPU + High-RAM:** E0, E1, E5, E7, E8
-- **L4:** E2, E6
-- **T4:** E3, E4
+Open **`notebooks/reliable_vqa_master.ipynb`**. Run the **SETUP** cell first on every
+fresh runtime (clones/pulls repo, installs only missing packages). Then either run
+cell-by-cell or **Run all** — every experiment skips itself instantly if its Drive
+`DONE.json` marker + artifacts exist. Cheapest split:
+- **Session 1 (CPU + High-RAM):** SETUP → E0 → E1
+- **Session 2 (A100 or L4):** SETUP → Run all (E0/E1 skip; E2–E8 run)
 
-**Resume story:** re-run a crashed cell — idempotency guards detect partial work and resume
-from the last shard. `FORCE_RERUN=True` in `config.py` forces recompute.
+**Resume story:** re-run a crashed cell — idempotency guards detect partial work and
+resume from the last shard. Force reruns with `VQA_FORCE_RERUN=1` (all) or by deleting
+one experiment's `DONE.json` on Drive.
 After E8, commit `results/` back to the repo.
 
 ### Step 2 — Phase 2 (E9), only after E0–E8 committed
-Flip `RUN_E9=True` in `config.py`, switch to **L4**, run the E9 cell. If LA-3B misbehaves,
-set `GROUNDER="qwen25vl"` — the harvest loop is model-agnostic.
+Uncomment `os.environ['VQA_RUN_E9'] = '1'` in the E9 cell, use a GPU runtime
+(A100/L4), run the cell. If LA-3B misbehaves, set `GROUNDER="qwen25vl"` — the
+harvest loop is model-agnostic.
 
 ### Reproduce figures without GPU
 `bash reproduce.sh` regenerates F1–F10 from cached JSON.
@@ -226,9 +237,15 @@ set `GROUNDER="qwen25vl"` — the harvest loop is model-agnostic.
 
 - **For deep questions on methodology/metrics/validation:** read [`PIPELINE.md`](PIPELINE.md)
   (esp. §4 experiment specs and §4.5 validation protocol).
-- **When the user pastes a Colab error:** identify the failing cell/module, fix the `src/` file
-  (not the notebook glue unless it's genuinely notebook-level), keep the fix minimal, then
-  **re-run `smoketest.ipynb` logic** before pushing. The user re-pulls from GitHub.
+- **When the user pastes a Colab error:** identify the failing experiment module in
+  `src/experiments/` (the notebook cells are thin wrappers and almost never the problem),
+  fix the `src/` file, keep the fix minimal, then **re-run `smoketest.ipynb` logic** before
+  pushing. The user only reruns the SETUP cell (git pull) + the failed cell — no notebook
+  reopen needed.
+- **Dependency policy:** never add exact old pins to `requirements.txt` and never
+  reinstall packages Colab already ships — that is what caused the repeated
+  "numpy.dtype size changed" breakage. The SETUP cell import-probes and installs
+  only missing packages.
 - **Never** introduce heuristic labels, `transformers.AdamW`, bare-accuracy headlines, a 7×7
   defect confusion matrix, or threshold selection on `rep`/`test`. These are the exact things
   that would sink the paper or trip the assertions.

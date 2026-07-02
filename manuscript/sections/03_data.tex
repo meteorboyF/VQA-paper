@@ -8,3 +8,10 @@ The two datasets are joined by image filename and split. We keep examples that h
 
 \subsection{Label Distribution}
 The answerable rate after joining is 0.7214. Quality labels are highly imbalanced. Framing and blur are the most common defects, with positive rates 0.5606 and 0.4161 respectively. Bright, dark, and obstruction are much rarer, with positive rates 0.0539, 0.0563, and 0.0352. These imbalances motivate per-defect reporting and caution against relying on accuracy alone.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{F2_cooccurrence.pdf}
+    \caption{Quality-label structure in the joined data. The left panel shows pairwise defect co-occurrence, while the right panel shows per-defect prevalence relative to the answerable rate. The skewed distribution motivates per-defect metrics and recovery analysis rather than aggregate accuracy alone.}
+    \label{fig:label_distribution}
+\end{figure}

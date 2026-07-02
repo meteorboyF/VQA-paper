@@ -1,4 +1,10 @@
-# Manuscript Draft
+# Manuscript Draft (superseded)
+
+> **The submission-ready paper now lives in `../IEEE Access template/`**
+> (`access.tex` + `references.bib` + `figures/`), written in the official
+> IEEE Access class with the review fixes applied. The figure PDFs were
+> MOVED there, so `main.tex` in this folder no longer builds. This folder
+> is kept as the section-by-section drafting workspace.
 
 This folder contains a LaTeX base draft for the revised paper framing.
 
@@ -37,6 +43,6 @@ gating beats global VQA confidence.
 
 ## Citation Note
 
-Most bibliography entries are ready as base citations. The entry
-`selectivevq2024` is intentionally marked "Authors to verify" because the exact
-metadata should be checked before submission.
+The `selectivevq2024` placeholder was resolved in the IEEE Access version:
+arXiv:2406.00980 is "Selectively Answering Visual Questions" by Eisenschlos,
+Maina, Ivetta, and Benotti (2024), cited there as `eisenschlos2024selectively`.

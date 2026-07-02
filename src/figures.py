@@ -309,8 +309,16 @@ def f6_arr_frr(arr_frr_json_path: str) -> str:
 # ── F7: Backbone comparison table -> figure ───────────────────────────────────
 
 def f7_backbone_comparison(metrics_by_backbone: dict) -> str:
-    backbones = list(metrics_by_backbone.keys())
     metric_keys = ["AUROC", "AUPRC", "F1", "balanced_acc", "mAP"]
+    backbones = [
+        bb for bb, metrics in metrics_by_backbone.items()
+        if any(isinstance(metrics.get(k), dict) and "mean" in metrics.get(k, {}) for k in metric_keys)
+    ]
+    if not backbones:
+        raise ValueError(
+            "F7 needs E3/E4 metric summaries with AUROC/AUPRC/F1/balanced_acc/mAP means; "
+            "no valid backbone metrics were found."
+        )
     n_m = len(metric_keys)
     x = np.arange(n_m)
     width = 0.8 / max(len(backbones), 1)

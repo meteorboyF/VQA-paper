@@ -339,6 +339,12 @@ def f8_selective_diagnostics(e7b_summary_path: str) -> str:
     intentionally designed to show the revised negative result: defect features
     do not reliably improve risk ranking over confidence.
     """
+    if FIG_DIR is not None:
+        for ext in ("pdf", "png"):
+            legacy = os.path.join(FIG_DIR, f"F8_roc_panels.{ext}")
+            if os.path.exists(legacy):
+                os.remove(legacy)
+
     with open(e7b_summary_path) as f:
         summary = json.load(f)
 

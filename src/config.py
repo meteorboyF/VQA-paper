@@ -40,11 +40,15 @@ RESULTS_E9 = os.path.join(RESULTS, "E9_grounding")
 FIGURES_DIR = os.path.join(RESULTS, "figures")
 
 # ── Raw data zip names on Drive (adapt if your zip names differ) ─────────────
+# These are only the CANONICAL locations: staging auto-discovers zips anywhere
+# under DRIVE_BASE by content, and auto-downloads (then persists here) any
+# that are missing. quality_annotations.zip is renamed from VizWiz's official
+# annotations.zip to avoid a case-only clash with the VQA Annotations.zip.
 RAW_ZIPS = {
     "images_train": f"{DRIVE_BASE}/data_raw/zips/train.zip",
     "images_val":   f"{DRIVE_BASE}/data_raw/zips/val.zip",
     "vqa_annot":    f"{DRIVE_BASE}/data_raw/zips/Annotations.zip",
-    "quality_annot":f"{DRIVE_BASE}/data_raw/zips/annotations.zip",
+    "quality_annot":f"{DRIVE_BASE}/data_raw/zips/quality_annotations.zip",
 }
 
 # ── Backbone selection ────────────────────────────────────────────────────────

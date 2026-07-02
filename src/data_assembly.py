@@ -17,21 +17,31 @@ import pandas as pd
 # Six quality flaws from VizWiz-QualityIssues
 QUALITY_FLAWS = ["blur", "bright", "dark", "obstruction", "framing", "rotation"]
 
-# ── Field-name map (populated from E0 audit; update if your JSON differs) ────
-# Keys = canonical name used in this codebase.
-# Values = actual JSON field name found in the annotation file.
-# E0 will print the real names; adapt here before running E1.
+# ── Field-name map (verified against the REAL VizWiz downloads, 2026-07) ────
+# QualityIssues record: {"image": "VizWiz_train_....jpg",
+#                        "flaws": {"BLR": 5, "FRM": 1, "DRK": 0, "BRT": 3,
+#                                  "OBS": 0, "ROT": 0, "OTH": 0, "NON": 0},
+#                        "unrecognizable": 4}
+# Values are VOTE COUNTS from 5 crowdworkers. Paper (arXiv:2003.12511):
+# "We deemed a label as valid only if at least two crowdworkers chose that
+# label." -> binarize at >= MIN_VOTES when values look like counts.
 FIELD_MAP_QUALITY = {
     "image":         "image",           # filename key
-    "flaws":         "quality_flaws",   # dict/list of flaw names (may vary)
-    "unrecognizable":"unrecognizable",  # bool / 0-1
+    "flaws":         "flaws",           # dict abbreviation -> vote count
+    "unrecognizable":"unrecognizable",  # vote count 0-5
 }
+# VQA record: {"image": ..., "question": ..., "answer_type": ...,
+#              "answerable": 0/1, "answers": [{"answer": str,
+#              "answer_confidence": str}] * 10}
 FIELD_MAP_VQA = {
     "image":      "image",
     "question":   "question",
     "answerable": "answerable",
     "answers":    "answers",            # list of {"answer": str, ...}
 }
+
+# Binarization threshold when quality labels are crowd vote counts (0-5).
+MIN_VOTES = 2
 
 
 def _get(obj: dict, *keys, default=None):
@@ -80,8 +90,19 @@ def _as_binary(value) -> int:
 
 
 def _flaws_to_dict(raw_flaws) -> dict:
-    """Normalize VizWiz quality flaw encodings to {canonical_flaw: 0/1}."""
+    """Normalize VizWiz quality flaw encodings to {canonical_flaw: numeric}.
+    Values are kept numeric (vote counts or 0/1); binarization happens in
+    load_quality once we know whether the dataset uses counts."""
     aliases = {
+        # Real VizWiz-QualityIssues abbreviations (the download uses THESE):
+        "blr": "blur",
+        "brt": "bright",
+        "drk": "dark",
+        "obs": "obstruction",
+        "frm": "framing",
+        "rot": "rotation",
+        # "oth" (other) and "non" (no flaw) are not among the 6 canonical flaws.
+        # Long-form spellings, for robustness against schema variants:
         "blur": "blur",
         "blurry": "blur",
         "bright": "bright",
@@ -100,14 +121,18 @@ def _flaws_to_dict(raw_flaws) -> dict:
     flaws = {}
     if isinstance(raw_flaws, list):
         if all(isinstance(x, (int, float, bool, np.integer, np.floating)) for x in raw_flaws):
-            return {name: _as_binary(raw_flaws[i]) for i, name in enumerate(QUALITY_FLAWS[:len(raw_flaws)])}
+            return {name: float(raw_flaws[i])
+                    for i, name in enumerate(QUALITY_FLAWS[:len(raw_flaws)])}
         for f in raw_flaws:
             key = aliases.get(str(f).strip().lower(), str(f).strip().lower())
-            flaws[key] = 1
+            flaws[key] = 1.0
     elif isinstance(raw_flaws, dict):
         for k, v in raw_flaws.items():
             key = aliases.get(str(k).strip().lower(), str(k).strip().lower())
-            flaws[key] = _as_binary(v)
+            try:
+                flaws[key] = float(v)
+            except (TypeError, ValueError):
+                flaws[key] = float(_as_binary(v))
     return flaws
 
 
@@ -116,13 +141,18 @@ def load_quality(split_json: str, split: str) -> pd.DataFrame:
     Load one QualityIssues split JSON -> DataFrame with columns:
     image, q_blur, q_bright, q_dark, q_obstruction, q_framing, q_rotation,
     q_unrecognizable, split.
+
+    Real VizWiz values are 5-crowdworker VOTE COUNTS; per the dataset paper a
+    label is positive iff >= MIN_VOTES (2). If the values are already binary
+    (max <= 1, e.g. synthetic tests), they are used as-is.
     """
     data = _records(json.load(open(split_json)), split=split)
-    rows = []
+
+    parsed = []
+    max_flaw_val = 0.0
+    max_unrec_val = 0.0
     for it in data:
         image = _image_name(_get(it, FIELD_MAP_QUALITY["image"], "image", "image_id", "file_name"))
-        # The flaws field may be a dict {flaw: 0/1} or a list of flaw names -
-        # handle both to be robust against schema variations.
         raw_flaws = _get(it,
                          FIELD_MAP_QUALITY["flaws"],
                          "flaws", "quality_flaws", "flaw",
@@ -136,10 +166,30 @@ def load_quality(split_json: str, split: str) -> pd.DataFrame:
                          default=0)
         if "recognizable" in it and FIELD_MAP_QUALITY["unrecognizable"] not in it:
             unrec_raw = 1 - _as_binary(unrec_raw)
+        try:
+            unrec_val = float(unrec_raw)
+        except (TypeError, ValueError):
+            unrec_val = float(_as_binary(unrec_raw))
+
+        vals = [flaws.get(flaw, 0.0) for flaw in QUALITY_FLAWS]
+        max_flaw_val = max(max_flaw_val, max(vals) if vals else 0.0)
+        max_unrec_val = max(max_unrec_val, unrec_val)
+        parsed.append((image, vals, unrec_val))
+
+    # Vote counts (0-5) vs already-binary labels.
+    flaw_thresh = MIN_VOTES if max_flaw_val > 1 else 1
+    unrec_thresh = MIN_VOTES if max_unrec_val > 1 else 1
+    print(f"[data_assembly] quality[{split}]: flaw values max={max_flaw_val:.0f} "
+          f"-> positive iff >= {flaw_thresh}; unrecognizable max={max_unrec_val:.0f} "
+          f"-> positive iff >= {unrec_thresh}")
+
+    rows = []
+    for image, vals, unrec_val in parsed:
         rows.append({
             "image": image,
-            **{f"q_{flaw}": _as_binary(flaws.get(flaw, 0)) for flaw in QUALITY_FLAWS},
-            "q_unrecognizable": _as_binary(unrec_raw),
+            **{f"q_{flaw}": int(v >= flaw_thresh)
+               for flaw, v in zip(QUALITY_FLAWS, vals)},
+            "q_unrecognizable": int(unrec_val >= unrec_thresh),
             "split": split,
         })
     return pd.DataFrame(rows)

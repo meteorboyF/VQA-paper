@@ -148,9 +148,17 @@ artifacts/
 
 ## Data requirements
 
-- VizWiz-VQA annotations (train.json, val.json) → Drive at `VQA_ML/AVA_VizWiz/data_raw/zips/Annotations.zip`
-- VizWiz-QualityIssues annotations → Drive at `.../data_raw/zips/annotations.zip`
-- VizWiz images (train, val) → Drive at `.../data_raw/zips/train.zip`, `val.zip`
+Nothing to do manually: **E0 auto-downloads anything missing** from the
+official VizWiz mirror (vizwiz.cs.colorado.edu) — train images ~10.6 GB, val
+images ~3.3 GB, both annotation zips a few MB — stages it locally, and copies
+the zip back to Drive (`.../data_raw/zips/`) so future sessions skip the
+download. Disable with `VQA_AUTO_DOWNLOAD=0`.
 
-Update `config.RAW_ZIPS` if your Drive layout differs. E0 will print the real
-JSON schemas; update `data_assembly.py FIELD_MAP_*` if field names differ.
+If you already have the files on Drive, any folder under
+`VQA_ML/AVA_VizWiz` works: discovery classifies zips by *content* (VQA JSONs
+have `"answerable"`, QualityIssues have `"flaws"`), not by filename. Unzipped
+annotation JSONs on Drive are also accepted.
+
+Schemas were verified against the real downloads (2026-07): quality flaw keys
+are `BLR/BRT/DRK/OBS/FRM/ROT` vote counts from 5 crowdworkers, binarized at
+>=2 votes per the dataset paper (`data_assembly.MIN_VOTES`).

@@ -14,12 +14,29 @@ markers; on a fresh runtime it restages only what the pending cell needs.
 import glob
 import json
 import os
+import shutil
 import zipfile
 
 from src import config, env
 
 ANNOTATION_KINDS = ("vqa_annot", "quality_annot")
 IMAGE_KINDS = ("images_train", "images_val")
+
+# Official VizWiz download URLs (verified live 2026-07). Used to auto-download
+# anything missing from Drive; the downloaded zip is also copied back to
+# Drive (config.RAW_ZIPS path) so future sessions skip the download.
+DOWNLOAD_URLS = {
+    "images_train": "https://vizwiz.cs.colorado.edu/VizWiz_final/images/train.zip",
+    "images_val": "https://vizwiz.cs.colorado.edu/VizWiz_final/images/val.zip",
+    "vqa_annot": "https://vizwiz.cs.colorado.edu/VizWiz_final/vqa_data/Annotations.zip",
+    "quality_annot": "https://vizwiz.cs.colorado.edu/VizWiz_final/image_quality/annotations.zip",
+}
+APPROX_SIZE_GB = {
+    "images_train": 10.6,
+    "images_val": 3.3,
+    "vqa_annot": 0.002,
+    "quality_annot": 0.001,
+}
 
 
 # ── Drive zip discovery ──────────────────────────────────────────────────────
@@ -50,14 +67,20 @@ def _zip_profile(path):
         with zipfile.ZipFile(path) as z:
             names = z.namelist()[:400]
             prof["names"] = [n.lower() for n in names]
-            for n in names:
-                if n.lower().endswith(".json"):
-                    try:
-                        with z.open(n) as f:
-                            prof["json_head"] = f.read(8_000_000).decode("utf-8", "ignore").lower()
-                    except Exception:
-                        pass
-                    break
+            # Sniff train/val JSONs first: in the real QualityIssues zip,
+            # test.json sorts first but its labels are hidden (image-only
+            # records), which would defeat content classification.
+            jsons = sorted(
+                (n for n in names if n.lower().endswith(".json")),
+                key=lambda n: ("train" not in n.lower() and "val" not in n.lower(), n))
+            heads = []
+            for n in jsons[:3]:
+                try:
+                    with z.open(n) as f:
+                        heads.append(f.read(8_000_000).decode("utf-8", "ignore").lower())
+                except Exception:
+                    pass
+            prof["json_head"] = " ".join(heads)
     except Exception:
         pass
     _ZIP_PROFILE_CACHE[path] = prof
@@ -82,15 +105,24 @@ def looks_like_zip(kind, path):
         return split in base
     if kind == "vqa_annot":
         if head:
-            return ('"answerable"' in head
-                    or ('"answers"' in head and '"question"' in head))
+            return _head_is_vqa(head)
         return "annotations" in base and os.path.basename(path)[:1].isupper()
     if kind == "quality_annot":
         if head:
-            return ('"flaws"' in head or "unrecognizable" in head
-                    or "quality" in head)
+            return _head_is_quality(head)
         return "quality" in base
     return False
+
+
+def _head_is_vqa(head: str) -> bool:
+    # Match JSON KEYS (quote immediately followed by colon), never bare words:
+    # VQA questions are free text and can contain 'quality'/'flaws' etc.
+    return ('"answerable":' in head
+            or ('"answers":' in head and '"question":' in head))
+
+
+def _head_is_quality(head: str) -> bool:
+    return '"flaws":' in head or '"unrecognizable":' in head
 
 
 def resolve_zip(kind, configured, all_zips=None):
@@ -107,6 +139,109 @@ def resolve_zip(kind, configured, all_zips=None):
         return matches[0]
     print(f"  [MISSING] {kind}: configured path not found: {configured}")
     return None
+
+
+# ── Auto-download of missing datasets ────────────────────────────────────────
+
+def _download_scratch() -> str:
+    if os.path.isdir("/content"):
+        return "/content"
+    return os.path.dirname(config.LOCAL_BASE.rstrip("/\\")) or "."
+
+
+def _is_valid_zip(path) -> bool:
+    try:
+        with zipfile.ZipFile(path) as z:
+            return bool(z.namelist())
+    except Exception:
+        return False
+
+
+def _download_url(url, dest_path, desc):
+    """Stream a URL to dest_path with a progress bar. Resumes a partial
+    .part file via HTTP Range; retries 3 times."""
+    import urllib.request
+    try:
+        from tqdm.auto import tqdm
+    except Exception:
+        from tqdm import tqdm
+    part = dest_path + ".part"
+    os.makedirs(os.path.dirname(dest_path) or ".", exist_ok=True)
+    last_exc = None
+    for attempt in range(1, 4):
+        try:
+            have = os.path.getsize(part) if os.path.exists(part) else 0
+            req = urllib.request.Request(url)
+            if have:
+                req.add_header("Range", f"bytes={have}-")
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                if have and getattr(resp, "status", 200) != 206:
+                    have = 0  # server ignored the resume request; restart
+                total = resp.headers.get("Content-Length")
+                total = (int(total) + have) if total else None
+                with open(part, "ab" if have else "wb") as out, tqdm(
+                        total=total, initial=have, unit="B", unit_scale=True,
+                        unit_divisor=1024, desc=desc) as bar:
+                    while True:
+                        chunk = resp.read(1 << 22)   # 4 MB
+                        if not chunk:
+                            break
+                        out.write(chunk)
+                        bar.update(len(chunk))
+            os.replace(part, dest_path)
+            return dest_path
+        except Exception as exc:
+            last_exc = exc
+            print(f"[staging] download attempt {attempt}/3 failed: {exc} - "
+                  f"resuming from what was already fetched")
+    raise RuntimeError(f"could not download {url}: {last_exc}")
+
+
+def download_kind(kind: str) -> str:
+    """Download the official VizWiz zip for `kind` to local disk, validate it,
+    and persist a copy to Drive (config.RAW_ZIPS). Returns the local path."""
+    url = DOWNLOAD_URLS[kind]
+    scratch = _download_scratch()
+    os.makedirs(scratch, exist_ok=True)
+    # kind-prefixed name avoids the Annotations.zip / annotations.zip clash
+    local_zip = os.path.join(scratch, f"{kind}__{os.path.basename(url)}")
+
+    if not (os.path.exists(local_zip) and _is_valid_zip(local_zip)):
+        need_gb = APPROX_SIZE_GB.get(kind, 1.0)
+        try:
+            free_gb = shutil.disk_usage(scratch).free / 1e9
+            if free_gb < need_gb * 2.2:
+                print(f"[staging] WARN: only {free_gb:.1f} GB free on local disk; "
+                      f"{kind} needs ~{need_gb:.1f} GB zipped + unzipped.")
+        except Exception:
+            pass
+        print(f"[staging] downloading {kind} (~{APPROX_SIZE_GB.get(kind, '?')} GB) "
+              f"from {url}")
+        _download_url(url, local_zip, desc=f"download {kind}")
+
+    if not _is_valid_zip(local_zip):
+        try:
+            os.remove(local_zip)
+        except OSError:
+            pass
+        raise RuntimeError(f"downloaded file for {kind} is not a valid zip; "
+                           f"deleted - rerun to retry")
+
+    # Persist to Drive so future sessions find it without downloading again.
+    drive_dest = config.RAW_ZIPS[kind]
+    if not os.path.exists(drive_dest):
+        try:
+            os.makedirs(os.path.dirname(drive_dest), exist_ok=True)
+            print(f"[staging] copying {kind} zip to Drive for future sessions: "
+                  f"{drive_dest}")
+            shutil.copy(local_zip, drive_dest + ".part")
+            os.replace(drive_dest + ".part", drive_dest)
+            print(f"[staging] persisted -> {drive_dest}")
+        except Exception as exc:
+            print(f"[staging] WARN: could not persist {kind} zip to Drive "
+                  f"({exc}). Continuing with the local copy; the download "
+                  f"will repeat next session unless you free Drive space.")
+    return local_zip
 
 
 # ── Staging ──────────────────────────────────────────────────────────────────
@@ -152,6 +287,20 @@ def stage_kinds(kinds, all_zips=None):
                 print(f"    {s}: {p}")
             missing.remove(kind)
 
+    # Anything still missing: download from the official VizWiz mirror,
+    # stage it, and persist the zip to Drive (disable with VQA_AUTO_DOWNLOAD=0).
+    if missing and os.environ.get("VQA_AUTO_DOWNLOAD", "1") != "0":
+        for kind in list(missing):
+            if kind not in DOWNLOAD_URLS:
+                continue
+            try:
+                local_zip = download_kind(kind)
+                dest = os.path.join(config.LOCAL_BASE, kind)
+                staged[kind] = env.stage_zip_to_local(local_zip, dest)
+                missing.remove(kind)
+            except Exception as exc:
+                print(f"[staging] auto-download failed for {kind}: {exc}")
+
     if missing:
         hints = {
             "images_train": "VizWiz train images (train.zip) from https://vizwiz.org/tasks-and-datasets/vqa/",
@@ -160,7 +309,8 @@ def stage_kinds(kinds, all_zips=None):
             "quality_annot": "VizWiz-QualityIssues annotations zip (train.json/val.json with 'flaws') "
                              "from https://vizwiz.org/tasks-and-datasets/image-quality-issues/",
         }
-        print("\n[staging] Required dataset(s) not found on Drive:")
+        print("\n[staging] Required dataset(s) not found on Drive "
+              "(and auto-download did not succeed):")
         for k in missing:
             print(f"  - {k}: expected {config.RAW_ZIPS[k]}")
             print(f"      -> need: {hints.get(k, '')}")
@@ -212,9 +362,7 @@ def _json_head(path, nbytes=8_000_000):
 
 def _json_matches_dataset(path, dataset):
     head = _json_head(path)
-    if dataset == "vqa":
-        return '"answerable"' in head or ('"answers"' in head and '"question"' in head)
-    return '"flaws"' in head or "unrecognizable" in head
+    return _head_is_vqa(head) if dataset == "vqa" else _head_is_quality(head)
 
 
 def find_annotation_json(dataset: str, split: str):

@@ -376,19 +376,15 @@ def f8_selective_diagnostics(e7b_summary_path: str) -> str:
            alpha=0.8, capsize=4)
     ax.axhline(0, color="black", lw=1)
     ax.set_xticks(x)
-    ax.set_xticklabels(backbones)
+    tick_labels = [
+        f"{bb}\np={float(pred[i]['p']):.3f} | {float(oracle[i]['p']):.3f}"
+        for i, bb in enumerate(backbones)
+    ]
+    ax.set_xticklabels(tick_labels)
+    ax.set_xlabel("Backbone (p-value: predicted-defect | oracle-defect)")
     ax.set_ylabel("AURC improvement vs. global confidence\n(positive is better)")
     ax.set_title("Selective Prediction Diagnostic: Defects Do Not Improve Risk Ranking")
     ax.legend(fontsize=9)
-
-    for i, r in enumerate(pred):
-        ax.text(x[i] - width / 2, pred_y[i], f"p={float(r['p']):.3f}",
-                ha="center", va="bottom" if pred_y[i] >= 0 else "top",
-                fontsize=8)
-    for i, r in enumerate(oracle):
-        ax.text(x[i] + width / 2, oracle_y[i], f"p={float(r['p']):.3f}",
-                ha="center", va="bottom" if oracle_y[i] >= 0 else "top",
-                fontsize=8)
 
     fig.tight_layout()
     return _save(fig, "F8_selective_diagnostics")

@@ -25,36 +25,71 @@ IMAGE_KINDS = ("images_train", "images_val")
 # ── Drive zip discovery ──────────────────────────────────────────────────────
 
 def list_drive_zips():
+    """All zips under DRIVE_BASE, plus a shallow scan one level up (in case
+    the zips were uploaded next to, not inside, the dataset folder)."""
     zips = sorted(glob.glob(os.path.join(config.DRIVE_BASE, "**", "*.zip"),
                             recursive=True))
+    parent = os.path.dirname(config.DRIVE_BASE.rstrip("/"))
+    if parent and os.path.isdir(parent):
+        for pat in ("*.zip", "*/*.zip", "*/*/*.zip"):
+            for p in glob.glob(os.path.join(parent, pat)):
+                if p not in zips:
+                    zips.append(p)
     return zips
 
 
-def _zip_names(path, limit=80):
+_ZIP_PROFILE_CACHE = {}
+
+
+def _zip_profile(path):
+    """Cheap classification profile: member names + head of the first JSON."""
+    if path in _ZIP_PROFILE_CACHE:
+        return _ZIP_PROFILE_CACHE[path]
+    prof = {"names": [], "json_head": ""}
     try:
         with zipfile.ZipFile(path) as z:
-            return z.namelist()[:limit]
+            names = z.namelist()[:400]
+            prof["names"] = [n.lower() for n in names]
+            for n in names:
+                if n.lower().endswith(".json"):
+                    try:
+                        with z.open(n) as f:
+                            prof["json_head"] = f.read(8_000_000).decode("utf-8", "ignore").lower()
+                    except Exception:
+                        pass
+                    break
     except Exception:
-        return []
+        pass
+    _ZIP_PROFILE_CACHE[path] = prof
+    return prof
 
 
 def looks_like_zip(kind, path):
+    """Classify a zip by its CONTENT first, filename second.
+    (The VizWiz QualityIssues zip contains only train/val/test.json - the word
+    'quality' never appears in its file listing, so name-only matching fails.)"""
     base = os.path.basename(path).lower()
-    names = [n.lower() for n in _zip_names(path)]
-    sample = " ".join(names[:80])
-    if kind == "images_train":
-        return (("train" in base and "annotation" not in base and "annot" not in base)
-                or any("train" in n and n.endswith((".jpg", ".jpeg", ".png")) for n in names))
-    if kind == "images_val":
-        return (("val" in base and "annotation" not in base and "annot" not in base)
-                or any("val" in n and n.endswith((".jpg", ".jpeg", ".png")) for n in names))
+    prof = _zip_profile(path)
+    names, head = prof["names"], prof["json_head"]
+    img_names = [n for n in names if n.endswith((".jpg", ".jpeg", ".png"))]
+
+    if kind in ("images_train", "images_val"):
+        split = kind.split("_")[1]
+        if "annot" in base:
+            return False
+        if img_names:
+            return any(split in n for n in img_names) or split in base
+        return split in base
     if kind == "vqa_annot":
-        return (("annotations" in base and os.path.basename(path)[:1].isupper())
-                or ("answerable" in sample and "answers" in sample))
+        if head:
+            return ('"answerable"' in head
+                    or ('"answers"' in head and '"question"' in head))
+        return "annotations" in base and os.path.basename(path)[:1].isupper()
     if kind == "quality_annot":
-        return (("quality" in base or base == "annotations.zip")
-                and ("quality" in sample or "quality_flaws" in sample
-                     or "unrecognizable" in sample or "recognizable" in sample))
+        if head:
+            return ('"flaws"' in head or "unrecognizable" in head
+                    or "quality" in head)
+        return "quality" in base
     return False
 
 
@@ -91,7 +126,11 @@ def stage_kinds(kinds, all_zips=None):
         return staged
     if all_zips is None:
         all_zips = list_drive_zips()
-        print(f"[staging] Found {len(all_zips)} zip file(s) under {config.DRIVE_BASE}")
+        print(f"[staging] Found {len(all_zips)} zip file(s) under {config.DRIVE_BASE} (+1 level up):")
+        for zp in all_zips[:40]:
+            print(f"  [zip] {zp}")
+        if len(all_zips) > 40:
+            print(f"  ... {len(all_zips) - 40} more zip files not shown")
     missing = []
     for kind in todo:
         zp = resolve_zip(kind, config.RAW_ZIPS[kind], all_zips)
@@ -100,11 +139,34 @@ def stage_kinds(kinds, all_zips=None):
             continue
         dest = os.path.join(config.LOCAL_BASE, kind)
         staged[kind] = env.stage_zip_to_local(zp, dest)
+
+    # Annotation kinds can fall back to unzipped JSONs already on Drive.
+    for kind in list(missing):
+        if kind not in ANNOTATION_KINDS:
+            continue
+        ds = "vqa" if kind == "vqa_annot" else "quality"
+        found = {s: find_annotation_json(ds, s) for s in ("train", "val")}
+        if all(found.values()):
+            print(f"[staging] {kind}: no zip found, but unzipped JSONs exist on Drive - using them:")
+            for s, p in found.items():
+                print(f"    {s}: {p}")
+            missing.remove(kind)
+
     if missing:
-        print("\n[staging] Required dataset zip(s) are missing on Drive:")
+        hints = {
+            "images_train": "VizWiz train images (train.zip) from https://vizwiz.org/tasks-and-datasets/vqa/",
+            "images_val": "VizWiz val images (val.zip) from https://vizwiz.org/tasks-and-datasets/vqa/",
+            "vqa_annot": "VizWiz-VQA Annotations.zip (train.json/val.json with 'answerable' + 'answers')",
+            "quality_annot": "VizWiz-QualityIssues annotations zip (train.json/val.json with 'flaws') "
+                             "from https://vizwiz.org/tasks-and-datasets/image-quality-issues/",
+        }
+        print("\n[staging] Required dataset(s) not found on Drive:")
         for k in missing:
             print(f"  - {k}: expected {config.RAW_ZIPS[k]}")
-        print("[staging] Put the zips on Drive or fix VQA_DRIVE_BASE/config.RAW_ZIPS, then rerun.")
+            print(f"      -> need: {hints.get(k, '')}")
+        print("[staging] The [zip] list above shows everything that WAS found.")
+        print("[staging] Upload the missing file(s) to Drive (any folder under "
+              f"{config.DRIVE_BASE} works - discovery matches by content), then rerun.")
         raise FileNotFoundError(f"missing required dataset zip(s): {missing}")
     return staged
 
@@ -140,15 +202,50 @@ def annotation_json_candidates(dataset: str, split: str):
     raise ValueError(f"unknown dataset: {dataset}")
 
 
+def _json_head(path, nbytes=8_000_000):
+    try:
+        with open(path, "rb") as f:
+            return f.read(nbytes).decode("utf-8", "ignore").lower()
+    except Exception:
+        return ""
+
+
+def _json_matches_dataset(path, dataset):
+    head = _json_head(path)
+    if dataset == "vqa":
+        return '"answerable"' in head or ('"answers"' in head and '"question"' in head)
+    return '"flaws"' in head or "unrecognizable" in head
+
+
 def find_annotation_json(dataset: str, split: str):
-    for p in annotation_json_candidates(dataset, split):
-        if os.path.exists(p):
+    # Prefer content-verified hits everywhere: the VQA and Quality zips both
+    # contain files literally named train.json/val.json, so a path match
+    # alone can pick the wrong dataset.
+    existing = [p for p in annotation_json_candidates(dataset, split)
+                if os.path.exists(p)]
+    for p in existing:
+        if _json_matches_dataset(p, dataset):
             return p
-    # Last resort: any matching json under the staged dir.
+    # Any matching json under the staged dir.
     root = os.path.join(config.LOCAL_BASE,
                         "vqa_annot" if dataset == "vqa" else "quality_annot")
-    hits = glob.glob(os.path.join(root, "**", f"{split}.json"), recursive=True)
-    return hits[0] if hits else None
+    for p in glob.glob(os.path.join(root, "**", f"{split}.json"), recursive=True):
+        if _json_matches_dataset(p, dataset):
+            return p
+    # Shallow Drive-side search with content sniffing, so an unzipped upload
+    # in a nonstandard folder still works.
+    for pat in (f"{split}.json", f"*/{split}.json", f"*/*/{split}.json",
+                f"*/*/*/{split}.json"):
+        for p in glob.glob(os.path.join(config.DRIVE_BASE, pat)):
+            if _json_matches_dataset(p, dataset):
+                return p
+    # Last resort: an existing candidate whose content didn't verify (unknown
+    # schema variant) - better to let E0's schema audit show it than to fail.
+    if existing:
+        print(f"[staging] WARN: {dataset}/{split}.json found at {existing[0]} "
+              f"but its content did not match the expected schema - using it anyway.")
+        return existing[0]
+    return None
 
 
 def annotation_records(obj, split=None):

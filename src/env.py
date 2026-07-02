@@ -59,7 +59,9 @@ def stage_zip_to_local(zip_path: str, dest_dir: str) -> str:
         return dest_dir
     if not os.path.exists(zip_path):
         raise FileNotFoundError(f"[env] zip not found on Drive: {zip_path}")
-    local_zip = os.path.join("/content", os.path.basename(zip_path))
+    scratch = "/content" if os.path.isdir("/content") else (
+        os.path.dirname(dest_dir.rstrip("/\\")) or ".")
+    local_zip = os.path.join(scratch, os.path.basename(zip_path))
     if not os.path.exists(local_zip):
         print(f"[env] copying {os.path.basename(zip_path)} Drive->local ...")
         shutil.copy(zip_path, local_zip)

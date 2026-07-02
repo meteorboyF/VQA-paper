@@ -14,7 +14,13 @@ DEFECT_NAMES = QUALITY_FLAWS + ["unrecognizable"]
 
 
 def required_artifacts():
-    return [os.path.join(config.RESULTS_E8, "c3_ablation.json")]
+    arts = [os.path.join(config.RESULTS_E8, "c3_ablation.json")]
+    for bb in config.BACKBONES:
+        arts.append(os.path.join(config.RESULTS_E3, f"metrics_{bb}.json"))
+        arts.append(os.path.join(config.RESULTS_E4, f"per_defect_auroc_{bb}.json"))
+        arts.append(os.path.join(config.RESULTS_E5, f"arr_frr_{bb}.json"))
+        arts.append(os.path.join(config.RESULTS_E7, f"aurc_comparison_{bb}.json"))
+    return arts
 
 
 def main():

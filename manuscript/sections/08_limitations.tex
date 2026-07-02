@@ -1,0 +1,3 @@
+\section{Limitations}
+
+This study uses VizWiz train and validation labels; hidden test answers are not evaluated. The frozen VQA model is \vilt, which obtains low absolute accuracy on the joined data, so results may differ with stronger modern VLMs. ARR and FRR depend on a deterministic defect-to-action map that should eventually be validated with users. Quality defects explain many image failures but not all reasons a VQA answer can be wrong, such as semantic ambiguity, OCR failures, or missing world knowledge. Finally, spatial grounding is not included in the core results; it remains an optional Phase 2 extension.

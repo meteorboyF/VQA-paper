@@ -1,0 +1,13 @@
+\section{Evaluation Metrics}
+
+\subsection{Answerability and Defect Prediction}
+Answerability triage is evaluated using AUROC, AUPRC, F1, balanced accuracy, and a majority-class baseline. Defect diagnosis is evaluated as a multi-label problem using per-defect AUROC and AUPRC, macro-F1, micro-F1, and mean average precision (mAP).
+
+\subsection{Selective Prediction}
+Selective prediction is evaluated with risk-coverage curves and area under the risk-coverage curve (\aurc). Lower \aurc{} indicates a better risk ranking. We compare global VQA confidence, temperature-scaled confidence, predicted-defect-aware calibration, learned risk scores using predicted defects, and an oracle learned risk score using ground-truth defects. Statistical comparisons use paired bootstrap confidence intervals on the report split.
+
+\subsection{Actionable Recovery}
+We define Actionable Recovery Rate (\arr) as the fraction of unanswerable examples for which the predicted defect leads to a corrective action matching at least one ground-truth defect. We define False Refilm Rate (\frr) as the fraction of answerable examples for which the system would ask the user to retake the image. ARR rewards useful recovery guidance; FRR measures unnecessary user burden.
+
+\subsection{Joint Versus Cascade}
+To quantify architecture effects, we compare a cascade design with separate answerability and defect heads against a joint multi-task head. We report the change in answerability AUROC between joint and cascade designs.

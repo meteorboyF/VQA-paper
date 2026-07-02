@@ -1,0 +1,49 @@
+\section{Results}
+
+\subsection{Data Sanity}
+The joined dataset contains 24,319 rows, with 20,000 training examples and 4,319 validation examples. The frozen \vilt model obtains mean VizWiz answer accuracy 0.1853 and mean confidence 0.4469, confirming that the downstream reliability problem is challenging.
+
+\subsection{Answerability Triage}
+\clip performs best for answerability triage, reaching AUROC 0.7926 and AUPRC 0.8811. \dinov reaches AUROC 0.7769, while \mobilenet reaches AUROC 0.7512. All three improve over the majority-class F1 baseline, but \clip provides the strongest answerability signal.
+
+\subsection{Defect Diagnosis}
+\dinov provides the strongest defect diagnosis by mAP, reaching 0.6309. \clip follows at 0.6216, and \mobilenet reaches 0.5801. Across backbones, unrecognizable content is among the easiest defects to identify, while framing and some rare defects remain harder.
+
+\begin{table}[t]
+    \centering
+    \caption{Core reliability-layer results.}
+    \label{tab:core_results}
+    \begin{tabular}{lccccc}
+        \toprule
+        Backbone & Triage AUROC & Defect mAP & ARR & FRR & Joint-Cascade $\Delta$AUROC \\
+        \midrule
+        \clip & 0.7926 & 0.6216 & 0.7196 & 0.7746 & 0.0013 \\
+        \mobilenet & 0.7512 & 0.5801 & 0.6278 & 0.7780 & 0.0037 \\
+        \dinov & 0.7769 & 0.6309 & 0.6907 & 0.7775 & 0.0028 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Actionable Recovery}
+\clip obtains the highest actionable recovery rate, \arr{} 0.7196, followed by \dinov at 0.6907 and \mobilenet at 0.6278. However, all methods have high false refilm rates near 0.78, indicating that a deployment system should tune recovery policies with user burden in mind.
+
+\subsection{Selective Prediction}
+The original hypothesis was that defect-aware risk scores would improve selective prediction over global VQA confidence. The experiments do not support this. Defect-conditioned calibration produces small and statistically unsupported \aurc{} changes. A learned predicted-defect risk model is also statistically unsupported. Even an oracle risk model using ground-truth defects is worse than global confidence, with negative improvement $-0.005343$ and $p=0.039$.
+
+\begin{table}[t]
+    \centering
+    \caption{Selective-prediction diagnostics. Positive improvement means lower \aurc{} than global VQA confidence.}
+    \label{tab:selective}
+    \begin{tabular}{lccc}
+        \toprule
+        Backbone & E7 defect $\Delta$AURC & E7b predicted-risk improvement & E7b oracle improvement \\
+        \midrule
+        \clip & 0.000895 ($p=0.297$) & 0.000701 ($p=0.798$) & -0.005343 ($p=0.039$) \\
+        \mobilenet & 0.000798 ($p=0.361$) & 0.002360 ($p=0.418$) & -0.005343 ($p=0.039$) \\
+        \dinov & -0.000118 ($p=0.923$) & -0.002442 ($p=0.448$) & -0.005343 ($p=0.039$) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Joint Versus Cascade}
+The joint head gives small but consistent AUROC gains over the cascade design: +0.0013 for \clip, +0.0037 for \mobilenet, and +0.0028 for \dinov. These gains are modest, suggesting that architecture choice is less important than the backbone and the separation between risk ranking and explanation.

@@ -1,0 +1,15 @@
+\section{Introduction}
+
+Visual question answering (VQA) has become a natural interface for assistive technology: a blind or low-vision user can capture an image, ask a question, and receive a textual answer. Yet this setting is also unusually fragile. Images are captured in uncontrolled conditions, often without visual feedback, and the content needed to answer the question may be blurred, poorly framed, occluded, overexposed, underexposed, rotated, or impossible to recognize. The VizWiz benchmark was created precisely to reflect this real-world setting: its questions originate from blind users and frequently cannot be answered from the submitted image \cite{gurari2018vizwiz}.
+
+Reliability in assistive VQA is therefore not only a matter of answer accuracy. A system must decide when to abstain, but it should also explain why the image or question is not answerable and provide useful recovery advice. Existing reliable VQA work has largely framed this problem as selective prediction: answer when the model is likely correct and abstain otherwise \cite{whitehead2022reliable,dancette2023improving}. This framing is essential, but it does not directly tell a user how to fix the failed interaction. Separately, the VizWiz-QualityIssues dataset provides human annotations for real image-quality flaws in images captured by blind users \cite{chiu2020assessing}. These labels create an opportunity to connect abstention with explanation and recovery.
+
+This paper studies that connection. We build a lightweight reliability layer around a frozen VQA model. The layer predicts answerability and image-quality defects from frozen visual embeddings, harvests the VQA model's answer confidence, evaluates selective-prediction behavior, and maps predicted defects to retake guidance. Importantly, our experiments show a negative but useful result: defect-aware selective-prediction scores do not significantly improve risk-coverage ranking over the VQA model's own confidence. This finding changes the role of defect diagnosis. Rather than replacing confidence as the risk-ranking signal, defect diagnosis provides interpretable refusal reasons and actionable recovery advice.
+
+Our contributions are:
+\begin{itemize}
+    \item We join VizWiz-VQA answerability labels with VizWiz-QualityIssues defect labels to study answerability, quality diagnosis, and recovery in one assistive VQA pipeline.
+    \item We train lightweight answerability and multi-label defect heads on frozen \clip, \dinov, and \mobilenet embeddings, benchmarking modern visual backbones under identical evaluation conditions.
+    \item We introduce Actionable Recovery Rate (\arr) and False Refilm Rate (\frr) to evaluate whether predicted defects lead to useful retake guidance rather than merely abstention.
+    \item We report a selective-prediction diagnostic: predicted defects, defect-conditioned calibration, and oracle ground-truth defects do not significantly improve \aurc{} over global VQA confidence in this setup. This supports a deployment design in which confidence ranks risk while defect diagnosis explains and guides recovery.
+\end{itemize}

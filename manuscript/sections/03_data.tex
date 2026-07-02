@@ -1,0 +1,10 @@
+\section{Data}
+
+\subsection{Datasets}
+We use VizWiz-VQA \cite{gurari2018vizwiz} and VizWiz-QualityIssues \cite{chiu2020assessing}. VizWiz-VQA provides an image filename, a natural-language question, ten crowdsourced answers, answer type metadata, and an answerability flag. VizWiz-QualityIssues provides image-level quality labels: blur, bright, dark, obstruction, framing, rotation, and unrecognizable content.
+
+\subsection{Joining Labels}
+The two datasets are joined by image filename and split. We keep examples that have both VQA answerability labels and quality-issue labels. In the current run this produces 24,319 rows: 20,000 training rows and 4,319 validation rows. Validation is further split into a calibration subset and a report subset. All thresholds, temperatures, and learned risk-score models are fit on calibration data only; all reported selective-prediction metrics are computed on the report subset.
+
+\subsection{Label Distribution}
+The answerable rate after joining is 0.7214. Quality labels are highly imbalanced. Framing and blur are the most common defects, with positive rates 0.5606 and 0.4161 respectively. Bright, dark, and obstruction are much rarer, with positive rates 0.0539, 0.0563, and 0.0352. These imbalances motivate per-defect reporting and caution against relying on accuracy alone.

@@ -1,0 +1,25 @@
+\section{Method}
+
+Figure~\ref{fig:pipeline} summarizes the intended pipeline. A frozen image encoder produces visual embeddings. Lightweight heads predict answerability and quality defects. Separately, a frozen VQA model answers the question and emits confidence. The system can then decide whether to answer, refuse, and provide retake guidance.
+
+\begin{figure}[t]
+    \centering
+    \fbox{\parbox{0.92\linewidth}{\centering Placeholder for F1 pipeline schematic from \texttt{results/figures/F1\_pipeline\_schematic.pdf}.}}
+    \caption{Overview of the reliability layer. Frozen visual features feed answerability and defect heads. Frozen VQA confidence provides the main risk-ranking signal. Predicted defects provide refusal explanation and retake guidance.}
+    \label{fig:pipeline}
+\end{figure}
+
+\subsection{Frozen Backbones}
+We compare three frozen image encoders: \clip ViT-B/32, \dinov ViT-S/14, and \mobilenet-Large. The resulting embeddings are cached once and reused by all downstream heads. This keeps the experiments reproducible and avoids recomputing expensive features.
+
+\subsection{Answerability Triage}
+For each backbone, a small multilayer perceptron predicts the VizWiz answerability label. Heads are trained on the training split, thresholds are selected on the calibration split, and final metrics are reported on the held-out report split.
+
+\subsection{Defect Diagnosis}
+The defect head is a multi-label classifier over seven labels: blur, bright, dark, obstruction, framing, rotation, and unrecognizable. Each label is evaluated one-vs-rest, and macro/micro summaries are reported alongside per-defect AUROC and AUPRC.
+
+\subsection{Frozen VQA Confidence}
+We use a frozen \vilt model fine-tuned for VQA to obtain a predicted answer and a maximum-softmax confidence for each example. VizWiz answer accuracy is computed as $\min(m/3, 1)$, where $m$ is the number of exact matches between the predicted answer and the ten human answers.
+
+\subsection{Recovery Mapping}
+Each predicted defect maps to a fixed user-facing retake action. For example, blur maps to holding the camera steady and refocusing, dark maps to adding light, and framing maps to stepping back so the full object is visible. This deterministic mapping is used to evaluate actionable recovery.

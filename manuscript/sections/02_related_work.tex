@@ -1,0 +1,13 @@
+\section{Related Work}
+
+\subsection{Assistive Visual Question Answering}
+The VizWiz VQA dataset introduced a goal-oriented VQA benchmark whose images and spoken questions come from blind users \cite{gurari2018vizwiz}. Unlike many synthetic or curated VQA datasets, VizWiz contains conversational questions, low-quality images, and a substantial number of unanswerable examples. This makes it a natural testbed for reliability and refusal in assistive VQA.
+
+\subsection{Image Quality in Real-World Assistive Images}
+Chiu et al. introduced VizWiz-QualityIssues, a dataset of image-quality annotations for images captured by blind users \cite{chiu2020assessing}. The labels include whether image content is recognizable and which flaws are present. Their work links image-quality assessment to practical vision tasks including captioning and VQA. Our paper uses these human defect labels not only as an image-quality prediction task, but also as the basis for refusal explanation and retake guidance.
+
+\subsection{Selective Prediction and Reliable VQA}
+Selective prediction allows a model to answer only when it is sufficiently reliable, trading coverage against risk \cite{elyaniv2010foundations}. Reliable VQA work has applied this idea to VQA systems, showing that softmax confidence can be insufficient and that learned selection functions can improve abstention behavior \cite{whitehead2022reliable,dancette2023improving}. Recent work on selectively answering visual questions further studies unanswerable or uncertain visual questions \cite{selectivevq2024}. Our experiments differ in focus: we test whether image-quality defect diagnosis improves selective prediction in assistive VQA and find that it does not outperform global VQA confidence for \aurc{} in our setting.
+
+\subsection{Frozen Visual and Vision-Language Models}
+We evaluate frozen visual representations from \clip \cite{radford2021clip}, \dinov \cite{oquab2023dinov2}, and \mobilenet \cite{howard2019mobilenetv3}. We use \vilt \cite{kim2021vilt} as a frozen discriminative VQA model to harvest answer predictions and confidence scores. This design keeps the reliability layer lightweight and separates reliability evaluation from VQA model training.

@@ -1,0 +1,7 @@
+\section{Discussion}
+
+The results suggest a separation of roles. VQA confidence is the best available signal for ranking answer risk, while defect diagnosis is useful for explanation and recovery. This is plausible: a VQA model's confidence may already encode image quality, question difficulty, answer ambiguity, and model uncertainty in a single scalar. Image-quality defects are semantically meaningful, but they do not fully order examples by VQA correctness.
+
+This negative result should not be hidden. In assistive settings, an honest reliability layer should distinguish between knowing that an answer is risky and knowing why the interaction failed. A high-confidence answer may be returned directly. A low-confidence answer may be refused. When refusing, the defect head can explain the likely visual cause and suggest a retake action. This design avoids overstating what defect labels can do for calibration while preserving their user-facing value.
+
+The high false refilm rates indicate that recovery policies should be cost-sensitive. Asking a blind or low-vision user to retake an image has a real usability cost. Future systems should tune recovery thresholds to balance helpful retake guidance against unnecessary burden.

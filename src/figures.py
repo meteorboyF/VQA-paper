@@ -280,10 +280,12 @@ def f6_arr_frr(arr_frr_json_path: str) -> str:
     # Left: per-defect ARR bars
     ax = axes[0]
     colors = [DEFECT_COLORS.get(d, "#888") for d in defects]
-    ax.bar(defects, arr_vals, color=colors, alpha=0.8)
+    x = np.arange(len(defects))
+    ax.bar(x, arr_vals, color=colors, alpha=0.8)
     ax.axhline(overall_arr, color="black", linestyle="--",
                label=f"Overall ARR={overall_arr:.3f} [{arr_ci[0]:.3f},{arr_ci[1]:.3f}]")
     ax.set_ylim(0, 1.1); ax.set_ylabel("ARR")
+    ax.set_xticks(x)
     ax.set_xticklabels(defects, rotation=30, ha="right", fontsize=9)
     ax.set_title("Actionable Recovery Rate per Defect")
     ax.legend(fontsize=8)

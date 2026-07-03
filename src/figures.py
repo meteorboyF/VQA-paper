@@ -465,8 +465,8 @@ def f8_selective_diagnostics_full(e7b_summary_path: str,
         ax.set_ylabel("AURC improvement vs. global confidence\n(positive is better)")
         ax.set_title(title, fontsize=10)
         ax.legend(fontsize=7, loc="lower right")
-    fig.suptitle("Selective-prediction diagnostics: no auxiliary signal reliably "
-                 "improves on VQA confidence", fontsize=11)
+    fig.suptitle("Selective-prediction diagnostics are VQA-model dependent",
+                 fontsize=11)
     fig.tight_layout()
     return _save(fig, "F8_selective_diagnostics")
 

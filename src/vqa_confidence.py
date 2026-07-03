@@ -252,3 +252,159 @@ def harvest(
     _atomic_parquet_write(df, out_parquet)
     print(f"[vqa_confidence] saved {len(df)} rows -> {out_parquet}")
     return df
+
+
+# ── Generative VQA harvest (E6b: BLIP) ───────────────────────────────────────
+
+def _blip_scorer(model_id: str, device: str):
+    """Return a batch scorer for a generative BLIP VQA model.
+
+    Confidence = length-normalized sequence probability, i.e. the geometric
+    mean of the generated tokens' probabilities under greedy decoding. This
+    is the standard max-prob analogue for generative answerers.
+    """
+    import torch
+    from transformers import BlipForQuestionAnswering, BlipProcessor
+    from src.env import autocast_dtype, setup_cuda_perf
+
+    setup_cuda_perf()
+    ac_dtype = autocast_dtype()
+    proc = BlipProcessor.from_pretrained(model_id)
+    model = BlipForQuestionAnswering.from_pretrained(model_id).to(device).eval()
+    pad_id = proc.tokenizer.pad_token_id or 0
+
+    @torch.inference_mode()
+    def score(images, questions):
+        enc = proc(images=images, text=questions,
+                   return_tensors="pt", padding=True).to(device)
+        with torch.autocast("cuda", dtype=ac_dtype, enabled=(device != "cpu")):
+            out = model.generate(**enc, max_new_tokens=10,
+                                 output_scores=True,
+                                 return_dict_in_generate=True)
+        trans = model.compute_transition_scores(
+            out.sequences, out.scores, normalize_logits=True)
+        gen_tokens = out.sequences[:, -trans.shape[1]:]
+        mask = gen_tokens != pad_id
+        tok_lp = trans.masked_fill(~mask, 0.0).float()
+        n_tok = mask.sum(-1).clamp(min=1)
+        confs = torch.exp(tok_lp.sum(-1) / n_tok).cpu().numpy()
+        preds = proc.batch_decode(out.sequences, skip_special_tokens=True)
+        return preds, confs
+
+    return score
+
+
+def harvest_generative(
+    records: list,
+    out_parquet: str,
+    model_id: str = "Salesforce/blip-vqa-base",
+    device: str = "cuda",
+    bs: int = 16,
+    force: bool = False,
+    scorer=None,          # injectable for tests: (images, questions) -> (preds, confs)
+) -> pd.DataFrame:
+    """Same contract, sharding, and resume behavior as harvest(), but for a
+    generative VQA model. Output schema is identical, so E7-style diagnostics
+    run unchanged on the resulting parquet."""
+    shard_dir = out_parquet + ".shards"
+    done_file = out_parquet + ".done.json"
+    if force:
+        for p in (out_parquet, done_file):
+            if os.path.exists(p):
+                os.remove(p)
+        if os.path.isdir(shard_dir):
+            shutil.rmtree(shard_dir)
+    os.makedirs(os.path.dirname(out_parquet), exist_ok=True)
+    os.makedirs(shard_dir, exist_ok=True)
+
+    if os.path.exists(out_parquet) and not force:
+        cached = _validate_final_parquet(out_parquet, len(records))
+        if cached is not None:
+            print(f"[vqa_confidence] cache hit -> {out_parquet}")
+            return cached
+        print("[vqa_confidence] final cache was invalid; resuming from shards")
+
+    valid_shards, done_ids = _valid_prediction_shards(shard_dir, len(records))
+    _atomic_json_dump(sorted(done_ids), done_file)
+    print(f"[vqa_confidence] resume state: {len(done_ids)}/{len(records)} rows "
+          f"complete, {len(records) - len(done_ids)} remaining")
+
+    pending = [r for i, r in enumerate(records) if i not in done_ids]
+    pending_idx = [i for i in range(len(records)) if i not in done_ids]
+
+    existing = [
+        int(f.split("_")[1].split(".")[0])
+        for f in os.listdir(shard_dir)
+        if f.startswith("shard_") and f.endswith(".parquet")
+    ]
+    rows_buf = []
+    shard_count = (max(existing) + 1) if existing else 0
+
+    def _flush():
+        nonlocal shard_count
+        if not rows_buf:
+            return
+        df_shard = pd.DataFrame(rows_buf)
+        shard_path = os.path.join(shard_dir, f"shard_{shard_count:06d}.parquet")
+        _atomic_parquet_write(df_shard, shard_path)
+        done_ids.update(df_shard["_row_id"].tolist())
+        _atomic_json_dump(sorted(int(i) for i in done_ids), done_file)
+        shard_count += 1
+        rows_buf.clear()
+
+    if pending and scorer is None:
+        scorer = _blip_scorer(model_id, device)
+
+    for batch_start in tqdm(range(0, len(pending), bs), desc="[vqa_gen]"):
+        batch = pending[batch_start: batch_start + bs]
+        batch_orig_idx = pending_idx[batch_start: batch_start + bs]
+
+        images, questions, meta = [], [], []
+        for rec in batch:
+            try:
+                img = Image.open(rec["image_path"]).convert("RGB")
+            except Exception:
+                img = Image.new("RGB", (224, 224))
+            images.append(img)
+            questions.append(rec["question"])
+            meta.append(rec)
+
+        try:
+            preds, confs = scorer(images, questions)
+        except Exception as e:
+            print(f"[vqa_confidence] batch error: {e}; filling with NaN")
+            confs = [float("nan")] * len(batch)
+            preds = [""] * len(batch)
+
+        for rec, orig_i, pred, conf in zip(meta, batch_orig_idx, preds, confs):
+            answers = rec.get("answers", [])
+            has_answers = answers is not None and len(answers) > 0
+            acc = vqa_accuracy(pred, list(answers)) if has_answers else float("nan")
+            row = {k: v for k, v in rec.items() if k != "answers"}
+            row.update({
+                "_row_id": orig_i,
+                "pred": str(pred),
+                "confidence": float(conf),
+                "correct": acc,
+            })
+            rows_buf.append(row)
+
+        if len(rows_buf) >= SHARD_ROWS:
+            _flush()
+
+    _flush()
+
+    shards, done_ids = _valid_prediction_shards(shard_dir, len(records))
+    if not shards:
+        raise RuntimeError("[vqa_confidence] no shards were written; check input records.")
+    if len(done_ids) != len(records):
+        missing = sorted(set(range(len(records))) - done_ids)[:10]
+        raise RuntimeError(
+            f"[vqa_confidence] cannot assemble: {len(records) - len(done_ids)} rows "
+            f"still missing. First missing rows: {missing}")
+    df = pd.concat([pd.read_parquet(s) for s in shards], ignore_index=True)
+    df = df.sort_values("_row_id").reset_index(drop=True)
+    df = df.drop(columns=["_row_id"], errors="ignore")
+    _atomic_parquet_write(df, out_parquet)
+    print(f"[vqa_confidence] saved {len(df)} rows -> {out_parquet}")
+    return df

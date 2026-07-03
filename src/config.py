@@ -128,13 +128,17 @@ GPU_HINTS = {
     "E4": "GPU (any)",
     "E5": "CPU",
     "E6": "GPU (A100 or L4 recommended)",
+    "E6B": "GPU (A100 or L4 recommended)",
     "E7": "CPU",
     "E8": "CPU",
     "E9": "GPU (A100 or L4 recommended)",
 }
 
 # Experiments that must not silently crawl on CPU (raise unless VQA_ALLOW_CPU=1).
-GPU_REQUIRED = {"E2", "E6", "E9"}
+GPU_REQUIRED = {"E2", "E6", "E6B", "E9"}
+
+# ── Second frozen VQA model (E6b robustness check) ───────────────────────────
+VQA_MODEL_ID_2 = "Salesforce/blip-vqa-base"
 ALLOW_CPU = os.environ.get("VQA_ALLOW_CPU", "0") == "1"
 
 

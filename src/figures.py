@@ -398,6 +398,79 @@ def f8_selective_diagnostics(e7b_summary_path: str) -> str:
     return _save(fig, "F8_selective_diagnostics")
 
 
+def f8_selective_diagnostics_full(e7b_summary_path: str,
+                                  e7c_summary_path: str,
+                                  e7d_summary_path: str = None) -> str:
+    """F8 covering the FULL method battery (E7b + E7c), one panel per frozen
+    VQA model when the E7d (BLIP) summary is available. Positive values mean
+    lower AURC than that model's own global confidence."""
+    method_labels = [
+        ("predicted_defect_risk_model", "conf + pred. defects"),
+        ("confidence_plus_triage", "conf + triage"),
+        ("confidence_plus_triage_plus_defects", "full stack"),
+        ("oracle_gt_defect_risk_model", "conf + GT defects (oracle)"),
+    ]
+    method_colors = ["#1565C0", "#2E7D32", "#6A1B9A", "#B71C1C"]
+
+    def _vilt_methods():
+        with open(e7b_summary_path) as f:
+            e7b = json.load(f)
+        with open(e7c_summary_path) as f:
+            e7c = json.load(f)
+        merged = {}
+        for bb in e7b.get("backbones", {}):
+            merged[bb] = {
+                "predicted_defect_risk_model":
+                    e7b["backbones"][bb]["predicted_defect_risk_model"],
+                "oracle_gt_defect_risk_model":
+                    e7b["backbones"][bb]["oracle_gt_defect_risk_model"],
+            }
+        for bb, methods in e7c.get("backbones", {}).items():
+            merged.setdefault(bb, {}).update({
+                "confidence_plus_triage": methods["confidence_plus_triage"],
+                "confidence_plus_triage_plus_defects":
+                    methods["confidence_plus_triage_plus_defects"],
+            })
+        return merged
+
+    panels = [("ViLT (discriminative max-softmax)", _vilt_methods())]
+    if e7d_summary_path and os.path.exists(e7d_summary_path):
+        with open(e7d_summary_path) as f:
+            e7d = json.load(f)
+        panels.append(("BLIP (generative sequence probability)",
+                       e7d.get("backbones", {})))
+
+    fig, axes = plt.subplots(1, len(panels),
+                             figsize=(7.5 * len(panels), 4.6), squeeze=False)
+    for ax, (title, by_bb) in zip(axes[0], panels):
+        backbones = list(by_bb.keys())
+        x = np.arange(len(backbones))
+        n_m = len(method_labels)
+        width = 0.8 / n_m
+        for j, ((key, label), color) in enumerate(zip(method_labels, method_colors)):
+            ys, lo, hi = [], [], []
+            for bb in backbones:
+                m = by_bb[bb].get(key)
+                if m is None:
+                    ys.append(np.nan); lo.append(0); hi.append(0)
+                    continue
+                ys.append(float(m["improvement_vs_global"]))
+                lo.append(float(m["improvement_vs_global"]) - float(m["ci_lo"]))
+                hi.append(float(m["ci_hi"]) - float(m["improvement_vs_global"]))
+            ax.bar(x + (j - (n_m - 1) / 2) * width, ys, width,
+                   yerr=[lo, hi], label=label, color=color, alpha=0.85, capsize=3)
+        ax.axhline(0, color="black", lw=1)
+        ax.set_xticks(x)
+        ax.set_xticklabels(backbones)
+        ax.set_ylabel("AURC improvement vs. global confidence\n(positive is better)")
+        ax.set_title(title, fontsize=10)
+        ax.legend(fontsize=7, loc="lower right")
+    fig.suptitle("Selective-prediction diagnostics: no auxiliary signal reliably "
+                 "improves on VQA confidence", fontsize=11)
+    fig.tight_layout()
+    return _save(fig, "F8_selective_diagnostics")
+
+
 def f8_roc_panels(triage_roc_data: dict, defect_roc_data: dict) -> str:
     defects = list(defect_roc_data.keys())
     n_panels = 1 + len(defects)

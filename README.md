@@ -1,6 +1,6 @@
 # Reliable Assistive VQA
 
-*Knowing When, Why, and Where to Refuse: A Defect-Aware Reliability Layer for Assistive Visual Question Answering*
+*Defect-Aware Refusal and Retake Guidance for Assistive Visual Question Answering: An Offline Reliability Study*
 
 **Target venue:** IEEE Access  
 **Runtime:** Google Colab Pro+ (cell-by-cell, GPU per experiment)  
@@ -98,14 +98,16 @@ src/
   stats.py          — multi_seed, bootstrap_ci, paired_bootstrap_delta, BH-FDR, DeLong
   calibration.py    — temperature scaling, ECE, defect-aware calibration
   selective.py      — risk-coverage, AURC, gating policies
-  vqa_confidence.py — frozen ViLT harvest (discriminative VQA → clean softmax)
-  actionable.py     — ARR, FRR, defect→action map
+  vqa_confidence.py — frozen ViLT/BLIP harvest (discriminative + generative)
+  text_features.py  — CLIP text-tower question embeddings (E10)
+  actionable.py     — GDMR, AIRB (legacy ARR/FRR keys), defect→action map
   grounding.py      — Phase 2: LA-3B / Qwen2.5-VL, groundability features
   figures.py        — F1–F10, one function each, PDF+PNG output
   resultlog.py      — versioned JSON + manifest.jsonl + RESULTS.md
 
 notebooks/
   reliable_vqa_master.ipynb   — THE notebook (E0 → E9)
+  revision_experiments.ipynb  — review-response pack (E4b/E5c/E5d/E10/E7e/E7f/E8f/E6c)
 
 results/
   E*/               — per-experiment JSON metrics
@@ -121,15 +123,15 @@ artifacts/
 
 ---
 
-## Contributions
+## Contributions (matched to the manuscript — do not restate stronger claims here)
 
 | # | Label | Description |
 |---|-------|-------------|
-| C1 | Defect-aware selective prediction | Defect-conditioned gating beats a global threshold on AURC |
-| C2 | Actionable Recovery | ARR + FRR metric for scoring corrective guidance |
-| C3 | Unified vs. cascade | Quantifies error propagation between joint and cascade heads |
-| C4 | Modern benchmark | CLIP / DINOv2 / MobileNet with full calibration metrics |
-| C5 | Groundability (Phase 2) | Grounding signal improves triage; spatial guidance |
+| C1 | Model-specific selective prediction | Auxiliary triage/defect signals do **not** significantly improve the ViLT confidence ranking after BH-FDR correction, but do improve the weaker BLIP sequence-probability ranking (up to +0.0179 AURC) |
+| C2 | Offline guidance proxies | GDMR (Guidance–Defect Match Rate) + AIRB (Answerable-Image Retake Burden), with explicit-denominator refusal-gated variants; offline proxies, not user outcomes |
+| C3 | Unified vs. cascade | Small observed AUROC differences between joint and cascade heads |
+| C4 | Frozen-backbone benchmark | CLIP / DINOv2 / MobileNetV3 under identical heads with calibration diagnostics |
+| C5 | Groundability (Phase 2, exploratory) | Grounding-signal experiments; not part of the submitted paper's claims |
 
 ---
 

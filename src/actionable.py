@@ -1,13 +1,18 @@
 """
-E5 - Actionable Recovery metric (contribution C2).
+E5 - Offline guidance proxies (contribution C2).
 
-ARR (Actionable Recovery Rate): among quality-unanswerable images, the fraction
-where the top predicted defect matches an actual ground-truth flaw.
+GDMR (Guidance-Defect Match Rate, formerly "ARR"): among unanswerable images,
+the fraction where the top predicted defect matches an annotated ground-truth
+defect. This scores guidance-defect agreement, NOT recovery: no image is
+retaken and no user outcome is measured.
 
-FRR (False-Refilm Rate): among answerable images, the fraction wrongly told to
-refilm (i.e., the model predicts a defect on a clean photo).
+AIRB (Answerable-Image Retake Burden, formerly "FRR"): among ANSWERABLE images
+(which may legitimately contain real defects), the fraction that would receive
+a retake suggestion. It is a burden proxy, not a false-positive rate.
 
-These two metrics MUST always be reported together - ARR alone is gameable.
+The two proxies MUST always be reported together - GDMR alone is gameable
+(see E5d trivial-policy baselines). Function/key names keep the legacy
+ARR/FRR identifiers for cache compatibility.
 """
 import numpy as np
 from src.stats import bootstrap_ci

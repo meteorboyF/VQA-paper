@@ -139,6 +139,9 @@ GPU_REQUIRED = {"E2", "E6", "E6B", "E9"}
 
 # ── Second frozen VQA model (E6b robustness check) ───────────────────────────
 VQA_MODEL_ID_2 = "Salesforce/blip-vqa-base"
+
+# ── Third frozen answerer: modern VLM (E6c, optional; review Major #2) ───────
+VQA_MODEL_ID_3 = os.environ.get("VQA_MODEL_ID_3", "Salesforce/blip2-opt-2.7b")
 ALLOW_CPU = os.environ.get("VQA_ALLOW_CPU", "0") == "1"
 
 

@@ -1,3 +1,12 @@
+% =====================================================================
+% references.bib — audited and corrected (pre-submission pass)
+% Change markers:
+%   % ADDED    — new entry introduced by the audit
+%   % EDITED   — entry corrected (venue upgrade, title-case protection, etc.)
+%   Duplicate entries removed: desai2020calibration, wang2020inferencecalibration,
+%   huh2024longform, chen2022grounding (each previously appeared twice).
+% =====================================================================
+
 @inproceedings{gurari2018vizwiz,
   title = {{VizWiz} Grand Challenge: Answering Visual Questions From Blind People},
   author = {Gurari, Danna and Li, Qing and Stangl, Abigale J. and Guo, Anhong and Lin, Chi and Grauman, Kristen and Luo, Jiebo and Bigham, Jeffrey P.},
@@ -31,11 +40,15 @@
   year = {2023}
 }
 
+% EDITED: added verified arXiv identifier (2402.15610).
 @inproceedings{srinivasan2024selective,
   title = {Selective ``Selective Prediction'': Reducing Unnecessary Abstention in Vision-Language Reasoning},
   author = {Srinivasan, Tejas and Hessel, Jack and Gupta, Tanmay and Lin, Bill Yuchen and Choi, Yejin and Thomason, Jesse and Chandu, Khyathi Raghavi},
   booktitle = {Findings of the Association for Computational Linguistics (ACL Findings)},
-  year = {2024}
+  year = {2024},
+  eprint = {2402.15610},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
 }
 
 @inproceedings{khan2024consistency,
@@ -100,6 +113,15 @@
   year = {2021}
 }
 
+% ADDED: BLIP is one of the two frozen VQA answerers and was previously uncited.
+@inproceedings{li2022blip,
+  title = {{BLIP}: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation},
+  author = {Li, Junnan and Li, Dongxu and Xiong, Caiming and Hoi, Steven},
+  booktitle = {Proceedings of the International Conference on Machine Learning (ICML)},
+  pages = {12888--12900},
+  year = {2022}
+}
+
 @misc{vizwizvqaweb,
   title = {{VizWiz} Visual Question Answering Dataset},
   author = {{VizWiz}},
@@ -112,4 +134,339 @@
   author = {{VizWiz}},
   howpublished = {\url{https://vizwiz.org/tasks-and-datasets/image-quality-issues/}},
   note = {Accessed: Jul. 2, 2026}
+}
+
+% EDITED: published at CVPR 2022 (previously cited as arXiv preprint);
+% duplicate entry removed.
+@inproceedings{chen2022grounding,
+  title = {Grounding Answers for Visual Questions Asked by Visually Impaired People},
+  author = {Chen, Chongyan and Anjum, Samreen and Gurari, Danna},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year = {2022},
+  eprint = {2202.01993},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+% EDITED: title-case protection for {VizWiz}.
+@article{dognin2020captioning,
+  title = {Image Captioning as an Assistive Technology: Lessons Learned from {VizWiz} 2020 Challenge},
+  author = {Dognin, Pierre and Melnyk, Igor and Mroueh, Youssef and Padhi, Inkit and Rigotti, Mattia and Ross, Jarret and Schiff, Yair and Young, Richard A. and Belgodere, Brian},
+  journal = {arXiv preprint arXiv:2012.11696},
+  year = {2020},
+  eprint = {2012.11696},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+@article{reynolds2023salient,
+  title = {Salient Object Detection for Images Taken by People With Vision Impairments},
+  author = {Reynolds, Jarek and Nagesh, Chandra Kanth and Gurari, Danna},
+  journal = {arXiv preprint arXiv:2301.05323},
+  year = {2023},
+  eprint = {2301.05323},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+@article{song2024videoqa,
+  title = {Video Question Answering for People with Visual Impairments Using an Egocentric 360-Degree Camera},
+  author = {Song, Inpyo and Joo, Minjun and Kwon, Joonhyung and Lee, Jangwon},
+  journal = {arXiv preprint arXiv:2405.19794},
+  year = {2024},
+  eprint = {2405.19794},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+% EDITED: published at ASSETS '24 (verified, DOI 10.1145/3663548.3675635);
+% previously cited as arXiv preprint.
+@inproceedings{hong2024blinderrors,
+  title = {Understanding How Blind Users Handle Object Recognition Errors: Strategies and Challenges},
+  author = {Hong, Jonggi and Kacorri, Hernisa},
+  booktitle = {Proceedings of the 26th International ACM SIGACCESS Conference on Computers and Accessibility (ASSETS)},
+  year = {2024},
+  doi = {10.1145/3663548.3675635}
+}
+
+% EDITED: published at ICLR 2023 (previously cited as arXiv preprint).
+@inproceedings{zhao2022slic,
+  title = {Calibrating Sequence Likelihood Improves Conditional Language Generation},
+  author = {Zhao, Yao and Khalman, Misha and Joshi, Rishabh and Narayan, Shashi and Saleh, Mohammad and Liu, Peter J.},
+  booktitle = {Proceedings of the International Conference on Learning Representations (ICLR)},
+  year = {2023},
+  eprint = {2210.00045},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
+}
+
+@article{lin2024csl,
+  title = {Contextualized Sequence Likelihood: Enhanced Confidence Scores for Natural Language Generation},
+  author = {Lin, Zhen and Trivedi, Shubhendu and Sun, Jimeng},
+  journal = {arXiv preprint arXiv:2406.01806},
+  year = {2024},
+  eprint = {2406.01806},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
+}
+
+% EDITED: title-case protection for {Context-VQA}.
+@article{naik2023contextvqa,
+  title = {{Context-VQA}: Towards Context-Aware and Purposeful Visual Question Answering},
+  author = {Naik, Nandita and Potts, Christopher and Kreiss, Elisa},
+  journal = {arXiv preprint arXiv:2307.15745},
+  year = {2023},
+  eprint = {2307.15745},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
+}
+
+% Duplicate entry removed (previously appeared twice with differing primaryClass).
+@article{huh2024longform,
+  title = {Long-Form Answers to Visual Questions from Blind and Low Vision People},
+  author = {Huh, Mina and Xu, Fangyuan and Peng, Yi-Hao and Chen, Chongyan and Murugu, Hansika and Gurari, Danna and Choi, Eunsol and Pavel, Amy},
+  journal = {arXiv preprint arXiv:2408.06303},
+  year = {2024},
+  eprint = {2408.06303},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
+}
+
+@article{mandal2023helping,
+  title = {Helping Visually Impaired People Take Better Quality Pictures},
+  author = {Mandal, Maniratnam and Ghadiyaram, Deepti and Gurari, Danna and Bovik, Alan C.},
+  journal = {arXiv preprint arXiv:2305.08066},
+  year = {2023},
+  eprint = {2305.08066},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+@article{sun2021blindquality,
+  title = {Blind Quality Assessment for In-the-Wild Images via Hierarchical Feature Fusion and Iterative Mixed Database Training},
+  author = {Sun, Wei and Min, Xiongkuo and Tu, Danyang and Zhai, Guangtao and Ma, Siwei},
+  journal = {arXiv preprint arXiv:2105.14550},
+  year = {2021},
+  eprint = {2105.14550},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.MM}
+}
+
+% EDITED: published at ACL 2020 (previously cited as arXiv preprint);
+% duplicate entry removed.
+@inproceedings{wang2020inferencecalibration,
+  title = {On the Inference Calibration of Neural Machine Translation},
+  author = {Wang, Shuo and Tu, Zhaopeng and Shi, Shuming and Liu, Yang},
+  booktitle = {Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year = {2020},
+  eprint = {2005.00963},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
+}
+
+@article{chen2024unveiling,
+  title = {Unveiling Uncertainty: A Deep Dive into Calibration and Performance of Multimodal Large Language Models},
+  author = {Chen, Zijun and Hu, Wenbo and He, Guande and Deng, Zhijie and Zhang, Zheng and Hong, Richang},
+  journal = {arXiv preprint arXiv:2412.14660},
+  year = {2024},
+  eprint = {2412.14660},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+% EDITED: published at NeurIPS 2017 (previously cited as arXiv preprint).
+@inproceedings{geifman2017selective,
+  title = {Selective Classification for Deep Neural Networks},
+  author = {Geifman, Yonatan and El-Yaniv, Ran},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume = {30},
+  year = {2017},
+  eprint = {1705.08500},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.LG}
+}
+
+% EDITED: published at ICML 2019 (previously cited as arXiv preprint).
+@inproceedings{geifman2019selectivenet,
+  title = {{SelectiveNet}: A Deep Neural Network with an Integrated Reject Option},
+  author = {Geifman, Yonatan and El-Yaniv, Ran},
+  booktitle = {Proceedings of the International Conference on Machine Learning (ICML)},
+  year = {2019},
+  eprint = {1901.09192},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.LG}
+}
+
+@inproceedings{nixon2019measuringcalibration,
+  title = {Measuring Calibration in Deep Learning},
+  author = {Nixon, Jeremy and Dusenberry, Michael W. and Jerfel, Ghassen and Nguyen, Timothy and Liu, Jeremiah and Zhang, Linchuan and Tran, Dustin},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops},
+  year = {2019},
+  eprint = {1904.01685},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.LG}
+}
+
+@inproceedings{minderer2021revisiting,
+  title = {Revisiting the Calibration of Modern Neural Networks},
+  author = {Minderer, Matthias and Djolonga, Josip and Romijnders, Rob and Hubis, Frances and Zhai, Xiaohua and Houlsby, Neil and Tran, Dustin and Lucic, Mario},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year = {2021},
+  eprint = {2106.07998},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.LG}
+}
+
+@article{saito2015prroc,
+  title = {The Precision-Recall Plot Is More Informative than the {ROC} Plot When Evaluating Binary Classifiers on Imbalanced Datasets},
+  author = {Saito, Takaya and Rehmsmeier, Marc},
+  journal = {PLOS ONE},
+  volume = {10},
+  number = {3},
+  pages = {e0118432},
+  year = {2015},
+  doi = {10.1371/journal.pone.0118432}
+}
+
+@article{efron1979bootstrap,
+  title = {Bootstrap Methods: Another Look at the Jackknife},
+  author = {Efron, Bradley},
+  journal = {The Annals of Statistics},
+  volume = {7},
+  number = {1},
+  pages = {1--26},
+  year = {1979},
+  doi = {10.1214/aos/1176344552}
+}
+
+@article{benjamini1995fdr,
+  title = {Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing},
+  author = {Benjamini, Yoav and Hochberg, Yosef},
+  journal = {Journal of the Royal Statistical Society: Series B},
+  volume = {57},
+  number = {1},
+  pages = {289--300},
+  year = {1995},
+  doi = {10.1111/j.2517-6161.1995.tb02031.x}
+}
+
+% EDITED: published at EMNLP 2020, pp. 295--302 (verified; previously cited as
+% arXiv preprint); duplicate entry removed.
+@inproceedings{desai2020calibration,
+  title = {Calibration of Pre-trained Transformers},
+  author = {Desai, Shrey and Durrett, Greg},
+  booktitle = {Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages = {295--302},
+  year = {2020},
+  eprint = {2003.07892},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
+}
+
+@article{ren2023selfevaluation,
+  title = {Self-Evaluation Improves Selective Generation in Large Language Models},
+  author = {Ren, Jie and Zhao, Yao and Vu, Tu and Liu, Peter J. and Lakshminarayanan, Balaji},
+  journal = {arXiv preprint arXiv:2312.09300},
+  year = {2023}
+}
+
+% EDITED: title-case protection for the quoted phrase.
+@article{wang2024myanswerisc,
+  title = {{``My Answer is C''}: First-Token Probabilities Do Not Match Text Answers in Instruction-Tuned Language Models},
+  author = {Wang, Xinpeng and Ma, Bolei and Hu, Chengzhi and Weber-Genzel, Leon and R{\"o}ttger, Paul and Kreuter, Frauke and Hovy, Dirk and Plank, Barbara},
+  journal = {arXiv preprint arXiv:2402.14499},
+  year = {2024}
+}
+
+@article{groot2024overconfidence,
+  title = {Overconfidence is Key: Verbalized Uncertainty Evaluation in Large Language and Vision-Language Models},
+  author = {Groot, Tobias and Valdenegro-Toro, Matias},
+  journal = {arXiv preprint arXiv:2405.02917},
+  year = {2024}
+}
+
+@article{kumar2019calibration,
+  title = {Calibration of Encoder Decoder Models for Neural Machine Translation},
+  author = {Kumar, Aviral and Sarawagi, Sunita},
+  journal = {arXiv preprint arXiv:1903.00802},
+  year = {2019},
+  eprint = {1903.00802},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL}
+}
+
+@article{kadavath2022language,
+  title = {Language Models (Mostly) Know What They Know},
+  author = {Kadavath, Saurav and Conerly, Tom and Askell, Amanda and Henighan, Tom and Drain, Dawn and Perez, Ethan and Schiefer, Nicholas and Hatfield-Dodds, Zac and DasSarma, Nova and Tran-Johnson, Eli and Johnston, Scott and El-Showk, Sheer and Jones, Andy and Elhage, Nelson and Hume, Tristan and Chen, Anna and Bai, Yuntao and Bowman, Sam and Fort, Stanislav and Ganguli, Deep and Hernandez, Danny and Jacobson, Josh and Kernion, Jackson and Kravec, Shauna and Lovitt, Liane and Ndousse, Kamal and Olsson, Catherine and Ringer, Sam and Amodei, Dario and Brown, Tom and Clark, Jack and Joseph, Nicholas and Mann, Ben and McCandlish, Sam and Olah, Chris and Kaplan, Jared},
+  journal = {arXiv preprint arXiv:2207.05221},
+  year = {2022},
+  eprint = {2207.05221},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.LG}
+}
+
+% EDITED: published at ICLR 2023 (previously cited as arXiv preprint).
+@inproceedings{kuhn2023semantic,
+  title = {Semantic Uncertainty: Linguistic Invariances for Uncertainty Estimation in Natural Language Generation},
+  author = {Kuhn, Lorenz and Gal, Yarin and Farquhar, Sebastian},
+  booktitle = {Proceedings of the International Conference on Learning Representations (ICLR)},
+  year = {2023},
+  eprint = {2302.09664},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.LG}
+}
+
+% EDITED: published at EMNLP 2025, pp. 1408--1450 (verified; previously cited
+% as arXiv preprint).
+@inproceedings{xuan2025seeing,
+  title = {Seeing is Believing, but How Much? A Comprehensive Analysis of Verbalized Calibration in Vision-Language Models},
+  author = {Xuan, Weihao and Zeng, Qingcheng and Qi, Heli and Wang, Junjue and Yokoya, Naoto},
+  booktitle = {Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages = {1408--1450},
+  year = {2025},
+  eprint = {2505.20236},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+% EDITED: title-case protection for {VL-Uncertainty}.
+@article{zhang2024vluncertainty,
+  title = {{VL-Uncertainty}: Detecting Hallucination in Large Vision-Language Model via Uncertainty Estimation},
+  author = {Zhang, Ruiyang and Zhang, Hu and Zheng, Zhedong},
+  journal = {arXiv preprint arXiv:2411.11919},
+  year = {2024},
+  eprint = {2411.11919},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+@inproceedings{ovadia2019uncertainty,
+  title = {Can You Trust Your Model's Uncertainty? Evaluating Predictive Uncertainty Under Dataset Shift},
+  author = {Ovadia, Yaniv and Fertig, Emily and Ren, Jie and Nado, Zachary and Sculley, D. and Nowozin, Sebastian and Dillon, Joshua V. and Lakshminarayanan, Balaji and Snoek, Jasper},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume = {32},
+  year = {2019},
+  eprint = {1906.02530},
+  archivePrefix = {arXiv},
+  primaryClass = {stat.ML}
+}
+
+@article{cao2022different,
+  title = {What's Different between Visual Question Answering for Machine ``Understanding'' Versus for Accessibility?},
+  author = {Cao, Yang Trista and Seelman, Kyle and Lee, Kyungjun and Daum{\'e} III, Hal},
+  journal = {arXiv preprint arXiv:2210.14966},
+  year = {2022},
+  eprint = {2210.14966},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CV}
+}
+
+% EDITED: published at ACM Multimedia 2024 (verified, DOI 10.1145/3664647.3681400);
+% previously cited as arXiv preprint.
+@inproceedings{ji2024flexible,
+  title = {Towards Flexible Evaluation for Generative Visual Question Answering},
+  author = {Ji, Huishan and Si, Qingyi and Lin, Zheng and Wang, Weiping},
+  booktitle = {Proceedings of the 32nd ACM International Conference on Multimedia (MM)},
+  year = {2024},
+  doi = {10.1145/3664647.3681400}
 }

@@ -211,12 +211,13 @@ and guide a corrective retake.
     \centering
     \includegraphics[width=\linewidth]
         {F1_pipeline_schematic.pdf}
-    \caption{Overview of the proposed reliability layer. Frozen
-    visual features feed the answerability and defect-prediction
-    heads, while the frozen VQA model supplies an answer and a
-    confidence score. Confidence supports risk ranking and the
-    answer/refuse decision; predicted defects explain refusals
-    and generate retake guidance.}
+    \caption{Overview of the proposed reliability layer as three
+    stages. The frozen VQA model supplies an answer and a
+    confidence score; a calibration-selected confidence threshold
+    decides whether to answer or refuse; and only refused examples
+    receive a predicted defect and its deterministic retake
+    instruction. Triage and defect heads operate on frozen image
+    embeddings.}
     \label{fig:pipeline}
 \end{figure}
 

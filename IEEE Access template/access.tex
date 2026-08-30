@@ -10,14 +10,18 @@
 \graphicspath{{figures/}}
 
 % ── Paper macros ─────────────────────────────────────────────────────────
-\newcommand{\arr}{\mathrm{ARR}}
-\newcommand{\frr}{\mathrm{FRR}}
+% GDMR = Guidance-Defect Match Rate (formerly "ARR"); AIRB = Answerable-Image
+% Retake Burden (formerly "FRR"). Both are offline proxies, not user outcomes.
+\newcommand{\arr}{\mathrm{GDMR}}
+\newcommand{\frr}{\mathrm{AIRB}}
 \newcommand{\aurc}{\mathrm{AURC}}
-\newcommand{\clip}{\textsc{CLIP}}
-\newcommand{\dinov}{\textsc{DINOv2}}
-\newcommand{\mobilenet}{\textsc{MobileNetV3}}
-\newcommand{\vilt}{\textsc{ViLT}}
-\newcommand{\blip}{\textsc{BLIP}}
+% Model names in standard casing (no small caps: \textsc distorts mixed-case
+% names such as DINOv2 and ViLT).
+\newcommand{\clip}{CLIP}
+\newcommand{\dinov}{DINOv2}
+\newcommand{\mobilenet}{MobileNetV3}
+\newcommand{\vilt}{ViLT}
+\newcommand{\blip}{BLIP}
 % IEEE Access' custom \Figure macro sets \xfigwd before captions. We use
 % standard figure environments, so provide the default expected by the class.
 \providecommand{\xfigwd}{0pt}
@@ -30,12 +34,13 @@
 \history{Date of publication xxxx 00, 0000, date of current version xxxx 00, 0000.}
 \doi{10.1109/ACCESS.2026.DOI}
 
-\title{Knowing When and Why to Refuse: Defect-Aware Explanation and Recovery for Assistive Visual Question Answering}
+\title{Defect-Aware Refusal and Retake Guidance for Assistive Visual Question Answering: An Offline Reliability Study}
 
-% TODO: replace author metadata, affiliations, and funding before submission.
+% TODO(AUTHOR APPROVAL): IEEE membership designations removed pending confirmation of each
+% author's actual membership status; restore "(Member, IEEE)" only where verified.
+% ORCID identifiers to be added for all authors before submission.
 \author{\uppercase{Golam Bari Fardeen, Md.\ Masum Mizi, Syed Zayan
-Anwar, Shinthia Rahman, Md.\ Abdullah Al Nafiz, Farhan Anan Himu (Member, IEEE), and Khushnur Binte Jahangir
-(Member, IEEE)}}
+Anwar, Shinthia Rahman, Md.\ Abdullah Al Nafiz, Farhan Anan Himu, and Khushnur Binte Jahangir}}
 
 \address{United International University, United City, Madani Ave,
 Dhaka 1212, Bangladesh}
@@ -46,10 +51,10 @@ Dhaka 1212, Bangladesh}
 \tfootnote{}
 
 \markboth
-{Fardeen \headeretal: Knowing When and Why to Refuse: Defect-Aware Explanation and Recovery for Assistive VQA}
-{Fardeen \headeretal: Knowing When and Why to Refuse: Defect-Aware Explanation and Recovery for Assistive VQA}
+{Fardeen \headeretal: Defect-Aware Refusal and Retake Guidance for Assistive Visual Question Answering}
+{Fardeen \headeretal: Defect-Aware Refusal and Retake Guidance for Assistive Visual Question Answering}
 
-\begin{abstract} Visual question answering (VQA) systems for blind and low-vision users must do more than return an answer: they must know when an answer is unreliable, explain why the interaction failed, and help the user recover. This article studies a lightweight reliability layer for assistive VQA that combines answerability triage, human-labeled image-quality defect diagnosis, selective-prediction diagnostics, and actionable retake guidance. Using VizWiz-VQA and VizWiz-QualityIssues, real answerability labels are joined with seven human-annotated quality defects: blur, bright, dark, obstruction, framing, rotation, and unrecognizable content. Small prediction heads trained on frozen CLIP, DINOv2, and MobileNetV3 embeddings estimate answerability and defects, while frozen ViLT and BLIP VQA models provide answers and confidence scores. The strongest triage head reaches AUROC 0.7926 with CLIP; the strongest defect head reaches mAP 0.6309 with DINOv2; and CLIP obtains ungated actionable recovery 0.7196. When retake guidance is gated by refusal at a 90\% target coverage, CLIP reaches gated actionable recovery 0.875 with gated false refilm rate 0.050 under the ViLT gate. Selective prediction is model-dependent: auxiliary reliability signals do not significantly improve ViLT confidence after false-discovery-rate correction, but they do improve the weaker BLIP confidence signal, with full-stack learned risk models improving BLIP AURC by up to 0.0179. Defect diagnosis is therefore best viewed not as a universal replacement for confidence-based risk ranking, but as an interpretable refusal-and-recovery mechanism whose ranking value depends on the underlying VQA model. \end{abstract}
+\begin{abstract} Visual question answering (VQA) systems for blind and low-vision (BLV) users must do more than return an answer: they should recognize when an answer is unreliable, identify a likely visual failure mode, and suggest a corrective retake. This article presents an offline reliability study of a lightweight layer around frozen VQA models that combines image-level visual-sufficiency triage, human-labeled image-quality defect diagnosis, selective-prediction diagnostics, and defect-conditioned retake guidance. Using VizWiz-VQA and VizWiz-QualityIssues, real answerability labels are joined with seven human-annotated quality defects: blur, bright, dark, obstruction, framing, rotation, and unrecognizable content. Small prediction heads trained on frozen CLIP, DINOv2, and MobileNetV3 image embeddings estimate visual sufficiency and defects, while frozen ViLT and BLIP VQA models provide answers and confidence scores. The strongest triage head reaches AUROC 0.7926 with CLIP; the strongest defect head reaches mAP 0.6309 with DINOv2. To evaluate guidance we introduce two offline proxies: the Guidance--Defect Match Rate (GDMR), which measures whether the suggested retake action targets an annotated defect, and the Answerable-Image Retake Burden (AIRB), which measures how often retake requests would be issued for answerable images. Ungated, CLIP obtains GDMR 0.7196; when guidance is issued only after confidence-based refusal at a 90\% target coverage, CLIP reaches gated GDMR 0.875 at gated AIRB 0.050 under the ViLT gate. Selective-prediction value is model-specific for the two answerers evaluated: auxiliary signals do not significantly improve the ViLT confidence ranking after false-discovery-rate correction, but they do improve the weaker BLIP sequence-probability ranking, by up to 0.0179 AURC. Within this offline protocol, defect diagnosis is best viewed not as a replacement for confidence-based risk ranking, but as an interpretable refusal-and-guidance mechanism whose ranking value depends on the underlying VQA model; validating the guidance with BLV users remains essential future work. \end{abstract}
 
 \begin{keywords}
 Accessibility, assistive technology, calibration, image quality assessment, selective prediction, visual question answering.
@@ -62,7 +67,7 @@ Accessibility, assistive technology, calibration, image quality assessment, sele
 \section{Introduction}
 \label{sec:introduction}
 
-\PARstart{V}{isual} question answering (VQA) is increasingly framed as an assistive interface: a blind or low-vision user captures an image, asks a spoken question, and expects a task-relevant answer. VizWiz made this promise concrete by collecting images and questions from blind users in everyday settings, and in doing so exposed a central obstacle for deployment: the visual evidence is often incomplete, poorly framed, blurred, dark, bright, rotated, or simply insufficient to answer the question at hand \cite{gurari2018vizwiz}. Subsequent work around the VizWiz ecosystem has reinforced that this difficulty is structural rather than incidental. Answer grounding remains hard in images taken by people with visual impairments, salient objects in those images differ systematically from those in conventional benchmarks, assistive captioning systems still struggle to transfer from curated data, and even newer egocentric video-based benchmarks remain challenging despite richer visual context \cite{chen2022grounding,dognin2020captioning,reynolds2023salient,song2024videoqa}. In other words, the practical problem in assistive VQA is not only to answer correctly when the image is good enough, but also to recognize when the image--question pair is unsafe to trust, which is precisely the deployment setting our reliability layer is designed for.
+\PARstart{V}{isual} question answering (VQA) is increasingly framed as an assistive interface: a blind or low-vision user captures an image, asks a spoken question, and expects a task-relevant answer. VizWiz made this promise concrete by collecting images and questions from blind users in everyday settings, and in doing so exposed a central obstacle for deployment: the visual evidence is often incomplete, poorly framed, blurred, dark, bright, rotated, or simply insufficient to answer the question at hand \cite{gurari2018vizwiz}. Subsequent work around the VizWiz ecosystem has reinforced that this difficulty is structural rather than incidental. Answer grounding remains hard in images taken by people with visual impairments, salient objects in those images differ systematically from those in conventional benchmarks, assistive captioning systems still struggle to transfer from curated data, and even newer egocentric video-based benchmarks remain challenging despite richer visual context \cite{chen2022grounding,dognin2020captioning,reynolds2023salient,song2024videoqa}. In other words, the practical problem in assistive VQA is not only to answer correctly when the image is good enough, but also to recognize when the image--question pair is likely to yield an unreliable answer, which is precisely the setting our reliability layer is designed for.
 
 A substantial literature now studies this reliability problem through selective prediction and abstention. Reliable VQA work showed that a system should sometimes prefer saying ``I do not know'' to returning a confident error, and that learned selection functions can improve the risk--coverage trade-off over naive confidence heuristics \cite{whitehead2022reliable,dancette2023improving}. More recent work extends this agenda to broader vision-language reasoning, including selectively answering visual questions, identifying unreliable black-box vision-language outputs through consistency and uncertainty cues, and reducing unnecessary abstention once a model has become too conservative \cite{eisenschlos2024selectively,khan2024consistency,srinivasan2024selective}. That literature is essential because it clarifies how to rank answer risk, but it usually stops at the decision to answer or abstain. For assistive use, however, refusal alone is not enough: a user also needs a reason for the failure and guidance on how to recover, which is the part of the problem our paper brings into the foreground.
 
@@ -70,13 +75,13 @@ A parallel thread of work studies image quality in assistive imagery more direct
 
 A further challenge is that not all confidence signals mean the same thing. In discriminative models, maximum-softmax confidence is easy to extract and, while often miscalibrated, has a well-established post-hoc calibration literature \cite{guo2017calibration}. In autoregressive generation, by contrast, raw sequence probability is a less stable proxy for correctness: recent work shows that sequence likelihood can mis-rank candidate quality and often benefits from explicit recalibration or context-sensitive reweighting before it can serve as a dependable confidence measure \cite{zhao2022slic,lin2024csl}. This distinction matters directly for assistive VQA because modern systems increasingly mix discriminative and generative answerers whose confidence semantics are not interchangeable. Our paper therefore asks a narrower and more deployment-relevant question than whether auxiliary signals ``help'' in the abstract: when does answerability and defect information actually improve selective prediction beyond the base VQA confidence, and when is its main value instead to explain refusals and guide recovery?
 
-We answer this question by building a lightweight reliability layer around frozen VQA models rather than proposing a new answerer. The layer predicts answerability and image-quality defects from frozen visual embeddings, harvests VQA confidence from a frozen answerer, evaluates selective-prediction behavior, and maps predicted defects to retake guidance. This design lets us separate risk ranking from user-facing diagnosis, and it yields four contributions:
+We answer this question by building a lightweight reliability layer around frozen VQA models rather than proposing a new answerer. The layer predicts visual sufficiency and image-quality defects from frozen visual embeddings, harvests VQA confidence from a frozen answerer, evaluates selective-prediction behavior, and maps predicted defects to retake guidance. One scoping choice should be stated up front: the triage and defect heads studied here operate on image embeddings only. VizWiz answerability is defined for an image--question pair, so an image-only head estimates whether the image provides sufficient visual evidence in general, not whether it answers the specific question asked; we therefore describe the triage signal as image-level visual sufficiency throughout, and treat question-conditioned triage as a required extension rather than a solved component. This design lets us separate risk ranking from user-facing diagnosis, and it yields four contributions:
 
 \begin{itemize}
-    \item We join VizWiz-VQA answerability labels with VizWiz-QualityIssues defect labels to study answerability, defect diagnosis, refusal, and recovery inside one assistive VQA pipeline.
-    \item We evaluate lightweight answerability and multi-label defect heads on frozen \clip{}, \dinov{}, and \mobilenet{} embeddings, keeping the reliability layer modular and computationally lightweight.
-    \item We introduce the Actionable Recovery Rate (\arr) and False Refilm Rate (\frr) to evaluate whether predicted defects translate into useful retake guidance, and we report both ungated diagnostics and refusal-gated deployment-aligned rates.
-    \item We show that selective-prediction gains from auxiliary signals are model-dependent: they do not significantly improve the stronger \vilt{} confidence ranking after correction, but they do improve the weaker \blip{} confidence signal, while defect diagnosis remains valuable in both settings as an interpretable refusal-and-recovery mechanism.
+    \item We join VizWiz-VQA answerability labels with VizWiz-QualityIssues defect labels to study visual-sufficiency triage, defect diagnosis, refusal, and retake guidance inside one assistive VQA pipeline.
+    \item We evaluate lightweight triage and multi-label defect heads on frozen \clip{}, \dinov{}, and \mobilenet{} embeddings, keeping the reliability layer modular and computationally lightweight.
+    \item We introduce two offline guidance proxies with fully explicit denominators: the Guidance--Defect Match Rate (\arr{}), which scores agreement between the suggested retake action and the annotated defects, and the Answerable-Image Retake Burden (\frr{}), which scores how often retake requests would fall on answerable images. We report both ungated diagnostics and refusal-gated rates, and we are explicit that these are offline proxies for potential actionability, not measured user outcomes.
+    \item We show that selective-prediction gains from auxiliary signals are model-specific for the two answerers evaluated: they do not significantly improve the \vilt{} confidence ranking after correction, but they do improve the weaker \blip{} sequence-probability ranking, while defect diagnosis remains valuable in both settings as an interpretable refusal-and-guidance mechanism.
 \end{itemize}
 
 \section{Related Work}
@@ -95,16 +100,16 @@ Selective prediction provides the formal language for saying ``answer when relia
 Confidence quality is a crucial variable in any selective-prediction pipeline, because auxiliary signals should only help when the base confidence signal leaves meaningful headroom. For discriminative classifiers, modern calibration work has made temperature scaling the standard post-hoc reference point for repairing overconfident softmax outputs without changing class order \cite{guo2017calibration}. Autoregressive generation is more complicated. In neural machine translation, Wang \emph{et al.} show that severe miscalibration can persist at inference time even when training-time behavior appears better behaved \cite{wang2020inferencecalibration}. In natural-language generation more broadly, Lin \emph{et al.} argue that raw generated-sequence likelihood is a noisy confidence surrogate because it conflates semantic correctness with syntactic and phrasing effects, and they show that reweighting sequence likelihood can substantially improve reliability as a correctness signal \cite{lin2024csl}. Recent multimodal studies report a similar pattern at the vision-language level, finding persistent miscalibration and a tendency for multimodal large language models to answer rather than admit uncertainty \cite{chen2024unveiling}. We therefore position our \vilt{}--\blip{} comparison not as a universal claim that generative confidence is always inferior to discriminative softmax, but as a targeted empirical test of whether auxiliary defect and triage signals become more valuable when the underlying confidence channel is weaker or less well aligned with correctness.
 
 \subsection{Actionable Feedback and Camera Guidance for Blind Users}
-The final gap concerns actionability. Many assistive systems can produce an answer, a caption, or a confidence score, yet far fewer tell the user how to recover from a failed capture. Mandal \emph{et al.} come closest by proposing automated feedback to help visually impaired users take better photographs, but their emphasis is primarily on mitigating technical distortion rather than on tying those signals to question answerability and refusal decisions \cite{mandal2023helping}. Conversely, long-form assistive VQA work shows that explanations and suggestions are desirable in principle, while also demonstrating how easily generative systems can hallucinate when the underlying image is not dependable \cite{huh2024longform}. What remains largely missing is a deployment-oriented evaluation of whether a refusal leads to a useful corrective action or merely increases user burden. Our contribution targets that gap directly by turning predicted defect categories into deterministic retake guidance and by evaluating the result with actionable recovery metrics, $\arr$ and $\frr$, including refusal-gated variants that better match real assistive deployment.
+The final gap concerns actionability. Many assistive systems can produce an answer, a caption, or a confidence score, yet far fewer tell the user how to recover from a failed capture. Mandal \emph{et al.} come closest by proposing automated feedback to help visually impaired users take better photographs, but their emphasis is primarily on mitigating technical distortion rather than on tying those signals to question answerability and refusal decisions \cite{mandal2023helping}. Conversely, long-form assistive VQA work shows that explanations and suggestions are desirable in principle, while also demonstrating how easily generative systems can hallucinate when the underlying image is not dependable \cite{huh2024longform}. What remains largely missing is an evaluation of whether a refusal is accompanied by guidance that at least targets a genuine capture problem, or merely increases user burden. Our contribution targets that gap with an offline evaluation: we turn predicted defect categories into deterministic retake guidance and score the result with the guidance-agreement proxies $\arr$ and $\frr$, including refusal-gated variants that restrict guidance to the refused subset. Whether such guidance actually helps a blind user capture a better image is a question these proxies cannot answer; it requires the user study we outline as future work.
 
 \section{Data Construction and Split Protocol}
 \label{sec:data}
 
 \subsection{Source Datasets}
-We build the study around two complementary VizWiz resources. VizWiz-VQA provides real images captured by blind users together with spoken questions, ten human answers, and an answerability flag indicating whether the question can be answered from the image \cite{gurari2018vizwiz}. VizWiz-QualityIssues provides human annotations for image-quality defects in the same assistive-photography setting, including blur, bright, dark, obstruction, framing, rotation, and unrecognizable content \cite{chiu2020assessing}. Using these two resources together lets us study not only whether a system should answer, but also whether it can explain the likely visual failure mode when it should not.
+We build the study around two complementary VizWiz resources. VizWiz-VQA provides real images captured by blind users together with spoken questions, ten human answers, and an answerability flag indicating whether the question can be answered from the image \cite{gurari2018vizwiz}. VizWiz-QualityIssues provides human annotations for image-quality defects in the same assistive-photography setting, including blur, bright, dark, obstruction, framing, rotation, and unrecognizable content \cite{chiu2020assessing}. Using these two resources together lets us study not only whether a system should answer, but also whether it can identify an annotated visual defect that may explain the failure when it should not.
 
 \subsection{Joining Labels and Enforcing the Frozen-Knob Protocol}
-The two datasets are joined by image filename and split, and we retain only examples that have both VQA answerability labels and quality-issue annotations. This produces 24,319 rows in total, comprising 20,000 training rows and 4,319 validation rows. We further divide the validation portion into a calibration subset of 1,295 rows and a report subset of 3,024 rows. This split is central to the paper's evaluation discipline: all operating thresholds, temperature-scaling parameters, and learned selective-prediction risk models are fit only on the calibration subset, and all numbers reported in the paper are computed on the held-out report subset. This frozen-knob rule prevents threshold tuning on the same examples used for final reporting and keeps the reliability analysis deployment-aligned rather than retrospectively optimized.
+The two datasets are joined by image filename and split, and we retain only examples that have both VQA answerability labels and quality-issue annotations. This produces 24,319 rows in total, comprising 20,000 training rows and 4,319 validation rows. We further divide the validation portion into a calibration subset of 1,295 rows and a report subset of 3,024 rows. This split is central to the paper's evaluation discipline: all operating thresholds, temperature-scaling parameters, and learned selective-prediction risk models are fit only on the calibration subset, and all final model-performance comparisons and statistical tests are computed on the held-out report subset (descriptive statistics of the full joined dataset, such as label prevalence and whole-dataset answer accuracy, are reported as such and labeled explicitly). This frozen-knob rule prevents threshold tuning on the same examples used for final reporting.
 
 \subsection{Label Definition and Class Imbalance}
 For quality defects, we follow the VizWiz-QualityIssues annotation protocol: each image is labeled by five crowdworkers, and a defect is treated as present when at least two annotators select it \cite{chiu2020assessing}. After joining, the answerable rate is 0.7214. The defect labels are substantially imbalanced. Framing and blur are common, with positive rates 0.5606 and 0.4161, respectively, while bright, dark, and obstruction are much rarer, with positive rates 0.0539, 0.0563, and 0.0352. These skews matter for evaluation: they make aggregate accuracy misleading, motivate per-defect AUROC and AUPRC reporting, and make recovery analysis more informative than a single pooled score.
@@ -145,20 +150,30 @@ Calibration is still relevant, but we use it as an auxiliary diagnostic rather t
 \begin{equation}
 \mathrm{ECE} = \sum_{b=1}^{B}\frac{|B_b|}{n}\left|\mathrm{acc}(B_b)-\mathrm{conf}(B_b)\right|,
 \end{equation}
-where $B_b$ is confidence bin $b$. We interpret ECE cautiously because its value depends on binning and related design choices, a point emphasized in later calibration studies \cite{nixon2019measuringcalibration,minderer2021revisiting}. Against this background, we compare the following score families for each frozen VQA model: global confidence, temperature-scaled confidence, defect-conditioned calibration, learned risk scores combining confidence with predicted defects, triage score alone, learned confidence-plus-triage scores, learned full-stack scores using confidence, triage, and predicted defects, and a confidence-plus-ground-truth-defects model used only as an oracle diagnostic of defect information. This comparison grid is what allows us to make the paper's central model-dependent claim without assuming in advance that defect signals must beat confidence.
+where $B_b$ is confidence bin $b$. We interpret ECE cautiously because its value depends on binning and related design choices, a point emphasized in later calibration studies \cite{nixon2019measuringcalibration,minderer2021revisiting}. One structural fact governs how these diagnostics are read: global temperature scaling with a single positive temperature is a strictly monotonic transformation, so it cannot change the confidence ordering and therefore cannot change $\aurc$. We consequently report temperature scaling only as a calibration diagnostic (via ECE and reliability diagrams), never as a risk-ranking competitor. Defect-conditioned calibration, by contrast, applies different temperatures to different examples and \emph{can} reorder them, so it participates in the $\aurc$ comparison. Against this background, we compare the following score families for each frozen VQA model: global confidence, defect-conditioned calibration, learned risk scores combining confidence with predicted defects, triage score alone, learned confidence-plus-triage scores, learned full-stack scores using confidence, triage, and predicted defects, and a confidence-plus-ground-truth-defects model used only as an oracle diagnostic of defect information. This comparison grid is what allows us to make the paper's central model-specific claim without assuming in advance that defect signals must beat confidence.
 
-\subsection{Actionable Recovery}
-Standard abstention metrics stop at the decision to answer or refuse, but assistive use requires a user-facing next action. We therefore evaluate retake guidance with two complementary measures. Let $U$ be the set of unanswerable examples and $A$ the set of answerable examples. For image $i$, let $\hat{d}_i$ be the top-scoring predicted defect if its probability exceeds $0.5$, and let $D_i$ be the set of ground-truth defects. We define the Actionable Recovery Rate as
+\subsection{Offline Guidance Proxies: \arr{} and \frr{}}
+\label{sec:guidance_metrics}
+Standard abstention metrics stop at the decision to answer or refuse, but assistive use requires a user-facing next action. We therefore evaluate retake guidance with two complementary offline proxies. We emphasize the word \emph{proxies}: no user retakes an image in this study and no second image is evaluated, so these measures score whether the suggested guidance \emph{targets an annotated defect}, not whether following it would recover the answer. Let $U$ be the set of unanswerable examples and $A$ the set of answerable examples on the evaluated split. For image $i$, let $\hat{d}_i$ be the top-scoring predicted defect if its probability exceeds a decision threshold ($\hat{d}_i=\varnothing$ otherwise), and let $D_i$ be the set of ground-truth defects. We define the Guidance--Defect Match Rate as
 \begin{equation}
 \arr = \frac{1}{|U|}\sum_{i \in U} \mathbb{1}\!\left[\hat{d}_i \in D_i\right],
 \end{equation}
-so $\arr$ measures whether the chosen retake recommendation corresponds to at least one true failure mode on unanswerable images. We define the ungated False Refilm Rate as
+so $\arr$ measures whether the chosen retake recommendation corresponds to at least one annotated failure mode on unanswerable images; an example with $\hat{d}_i=\varnothing$ counts as a miss because no guidance is offered. We define the ungated Answerable-Image Retake Burden as
 \begin{equation}
 \frr = \frac{1}{|A|}\sum_{i \in A} \mathbb{1}\!\left[\hat{d}_i \neq \varnothing\right],
 \end{equation}
-which counts how often the system would ask for a retake on images that are, in principle, answerable. This construction is intentionally conservative: an answerable image may still contain a genuine defect, so $\frr$ is a burden proxy rather than a pure error rate.
+which counts how often the system would ask for a retake on images that are, in principle, answerable. $\frr$ is deliberately a burden proxy rather than a ``false'' rate: an answerable image may contain a genuine defect, and an answerable image may still be answered incorrectly by the frozen model, in which case a retake could even be useful. A limitation shared by both proxies is that matching an annotated defect does not establish that the defect caused unanswerability: a blurred image may be unanswerable because the requested object is absent, in which case reducing blur would not recover the answer.
 
-We also report refusal-gated variants of $\arr$ and $\frr$ at target coverages of 90\%, 80\%, and 70\%, where retake guidance is issued only when the VQA confidence falls below a calibration-selected refusal threshold. This distinction is important in practice because ungated defect prediction answers the diagnostic question ``what is wrong with this image?'', whereas gated recovery answers the deployment question ``when should the system actually ask the user to re-shoot?'' The gated metrics therefore make our recovery analysis deployment-aligned: they evaluate whether a refusal can lead to a useful next action rather than stopping at abstention.
+We also report refusal-gated variants at target coverages of 90\%, 80\%, and 70\%, where retake guidance is issued only when the VQA confidence falls below a calibration-selected refusal threshold. Because gating changes the population over which each rate is computed, we report the gated results with fully explicit denominators. Let $R$ denote the refused set and $G \subseteq R$ the refused examples that receive guidance ($\hat{d}_i \neq \varnothing$). We report four quantities:
+\begin{align}
+\text{cond.\ guidance precision} &= \frac{|\{i \in R \cap U : \hat{d}_i \in D_i\}|}{|\{i \in R \cap U : \hat{d}_i \neq \varnothing\}|},\\
+\text{end-to-end match coverage} &= \frac{|\{i \in R \cap U : \hat{d}_i \in D_i\}|}{|U|},\\
+\text{gated retake burden} &= \frac{|\{i \in R \cap A : \hat{d}_i \neq \varnothing\}|}{|A|},\\
+\text{refusal precision} &= \frac{|R \cap U|}{|R|}.
+\end{align}
+The first quantity is conditional on the refused-unanswerable subset and can be high even when that subset is small; the second reports how much of the \emph{entire} unanswerable population actually receives matching guidance under the gate, which is the honest end-to-end number; the third and fourth characterize burden and refusal quality. Alongside each rate we report its raw numerator and denominator counts. The gated metrics therefore separate two different questions: ungated defect prediction answers the diagnostic question ``what is wrong with this image?'', whereas the gated quantities describe the refusal-gated offline policy ``issue guidance only after refusing.''
+
+Finally, because framing alone affects a majority of images, a trivial policy could achieve a nontrivial match rate without learning anything. We therefore compare the learned defect head against reference policies with identical scoring: always predicting framing, predicting the most prevalent defect among unanswerable images, sampling defects by prevalence, predicting a defect uniformly at random, and an oracle that predicts a uniformly random ground-truth defect.
 
 \subsection{Joint Versus Cascade}
 To quantify architectural effects, we compare a cascade design with separate answerability and defect heads against a joint multi-task head, and we summarize the difference as the change in answerability AUROC between the two designs. This comparison is intentionally narrow: the goal is not to claim a new multi-task learning result, but to determine whether head coupling materially changes triage quality once the visual backbone is frozen. That framing keeps the architectural comparison subordinate to the paper's main question, namely whether a lightweight reliability layer can provide trustworthy refusal, explanation, and recovery without retraining the VQA model.
@@ -172,13 +187,15 @@ Figure~\ref{fig:pipeline} summarizes the proposed reliability
 layer. The central design choice is role separation. A frozen
 visual encoder transforms each image into a reusable embedding,
 and lightweight prediction heads operating on that embedding
-estimate two auxiliary properties: whether the image--question
-pair is answerable and which image-quality defects are likely to
+estimate two auxiliary properties: whether the image provides
+sufficient visual evidence to support answering (image-level
+visual sufficiency) and which image-quality defects are likely to
 be present. In parallel, a frozen visual question answering (VQA)
 model produces an answer and an associated confidence score.
 These signals support three related but distinct operations:
-ranking answer risk, explaining why an interaction may have
-failed, and recommending how the user might recover.
+ranking answer risk, identifying an annotated visual defect that
+may have contributed to failure, and recommending how the user
+might recover.
 
 The proposed system does not retrain the underlying VQA model
 or claim to improve its answer-generation capability. Instead, it
@@ -223,15 +240,30 @@ remain frozen, observed differences reflect the information
 available in their representations and the behavior of the
 lightweight heads rather than end-to-end backbone fine-tuning.
 
-\subsection{Answerability Triage}
+\subsection{Image-Level Visual Sufficiency Triage}
+\label{sec:triage_method}
 
 For each backbone, a lightweight multilayer perceptron predicts
-the VizWiz answerability label. The target represents whether the
-question can be answered from the available visual evidence; it
-does not directly represent whether the frozen VQA model will
-produce the correct answer. This distinction is necessary because
-an answerable example may still be answered incorrectly, while
-an image containing one or more quality defects may remain
+the VizWiz answerability label from the image embedding alone.
+Because VizWiz answerability is defined for an image--question
+pair, an image-only head cannot capture question-dependent
+answerability: for one photograph of a medicine bottle, ``what
+color is the bottle?'' may be answerable while ``what is the
+dosage written in small text?'' is not. What the head estimates
+is therefore image-level visual sufficiency---whether the image
+provides enough usable visual evidence for typical questions---%
+and we use that term throughout. The reported triage AUROC
+should be read accordingly: it measures how much of VizWiz
+answerability is predictable from the image alone, which is
+substantial in this dataset because many unanswerable examples
+fail for purely visual reasons, but it is not pair-level
+answerability. Question-conditioned triage (question-only,
+concatenation, and image--question fusion heads, with the
+image-only head retained as an ablation) is the immediate
+extension of this work. The target also does not directly
+represent whether the frozen VQA model will produce the correct
+answer: an answerable example may still be answered incorrectly,
+while an image containing one or more quality defects may remain
 answerable.
 
 The heads are trained on the training split using five random
@@ -321,27 +353,56 @@ frozen-knob protocol prevents the final risk--coverage results
 from being influenced by post hoc tuning on the reported
 examples.
 
-\subsection{Recovery Mapping and Guidance Policy}
+\subsection{Guidance Mapping and Policy}
 
-Each predicted defect maps to a fixed user-facing retake action.
-For example, blur maps to holding the camera steady and
-refocusing, dark maps to adding light, and framing maps to
-stepping back so that the complete object is visible. The mapping
-is deterministic so that recovery success can be traced directly
-to the accuracy of the predicted defect rather than to the
-behavior of a separate language-generation model.
+Each predicted defect maps to a fixed user-facing retake action,
+listed exhaustively in Table~\ref{tab:defect_guidance}. The
+mapping is deterministic so that guidance--defect agreement can
+be traced directly to the accuracy of the predicted defect rather
+than to the behavior of a separate language-generation model.
+
+\begin{table}[t]
+    \centering
+    \caption{Deterministic defect-to-guidance mapping used by the
+    guidance policy. When no defect probability exceeds the
+    decision threshold, no retake guidance is issued.}
+    \label{tab:defect_guidance}
+    \small
+    \begin{tabular}{ll}
+        \toprule
+        Predicted defect & Retake instruction \\
+        \midrule
+        Blur & Hold the camera steady and refocus before retaking \\
+        Dark & Add light or move to a brighter area and retake \\
+        Bright & Reduce glare, avoid direct light, and retake \\
+        Obstruction & Move your finger or object off the lens and retake \\
+        Framing & Step back so the whole item is in frame and retake \\
+        Rotation & Rotate the phone upright and retake \\
+        Unrecognizable & The photo is too unclear; retake in better conditions \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 The highest-scoring defect is selected when its probability
-exceeds the prescribed threshold. On an unanswerable example,
-the guidance is considered actionable when the selected defect
-is present among the ground-truth defects. A retake suggestion
-issued for an answerable example contributes to false refilm
-burden. These two outcomes are measured using \arr{} and
-\frr{}, respectively.
+exceeds the decision threshold; when no defect exceeds the
+threshold, the system issues no retake guidance, and on an
+unanswerable example this counts as a guidance miss in \arr{}.
+Only the single top-scoring defect is surfaced even when several
+defects co-occur (for example, blur together with framing, or
+simultaneous bright and dark annotations arising from mixed
+lighting): a single concrete instruction avoids overloading an
+audio interface, at the cost of ignoring compatible secondary
+instructions. Whether the ``unrecognizable'' instruction is
+specific enough to act on is questionable, and we flag it as the
+least actionable mapping. On an unanswerable example, the
+guidance is scored as a match when the selected defect is present
+among the ground-truth defects. A retake suggestion issued for an
+answerable example contributes to retake burden. These two
+outcomes are measured using \arr{} and \frr{}, respectively.
 
-The deployment-aligned policy does not issue guidance whenever
-the defect head detects a quality issue. Instead, the confidence
-gate first decides whether the VQA answer should be accepted or
+The refusal-gated policy does not issue guidance whenever the
+defect head detects a quality issue. Instead, the confidence gate
+first decides whether the VQA answer should be accepted or
 refused. Defect-based guidance is presented only after refusal.
 This ordering is important because many answerable images still
 contain genuine quality defects; unconditional defect guidance
@@ -388,7 +449,7 @@ deployment.
     \includegraphics[width=0.47\textwidth]
         {F11_recovery_policy_comparison.pdf}
     \caption{Methodological workflows for selective prediction
-    and actionable recovery. Left: the frozen VQA model produces
+    and retake guidance. Left: the frozen VQA model produces
     an answer and confidence score; calibration-subset data are
     used to fit calibration parameters, refusal thresholds, and
     learned risk models before the held-out report subset is
@@ -396,11 +457,96 @@ deployment.
     Refused examples receive predicted-defect explanations and
     retake guidance. Right: the ungated policy applies defect
     guidance independently of refusal and is evaluated using
-    \arr{} and \frr{}, whereas the deployment-aligned gated
+    \arr{} and \frr{}, whereas the refusal-gated
     policy issues guidance only after confidence-based refusal
     and is evaluated using gated \arr{} and gated \frr{}.}
     \label{fig:decision_recovery_workflows}
 \end{figure*}
+
+\subsection{Implementation Details}
+\label{sec:implementation}
+
+\subsubsection{Backbones and Preprocessing}
+\clip{} ViT-B/32 is loaded through \texttt{open\_clip} with the
+original OpenAI weights and its native preprocessing pipeline,
+producing 512-dimensional image embeddings. \dinov{} ViT-S/14 is
+loaded from the official \texttt{facebookresearch/dinov2} hub
+release (\texttt{dinov2\_vits14}); images are resized to 256
+pixels (bicubic), center-cropped to $224\times224$, and
+normalized with ImageNet statistics, producing 384-dimensional
+embeddings. \mobilenet{}-Large uses the torchvision
+\texttt{IMAGENET1K\_V2} weights and their bundled transforms,
+with the 960-dimensional penultimate feature used as the
+embedding. All embeddings are extracted once, stored as
+float16, and shared by every downstream head.
+
+\subsubsection{Heads and Optimization}
+The triage and defect heads are two-layer perceptrons: a single
+hidden layer of width 256 with GELU activation and dropout 0.3,
+followed by a linear output layer (1 logit for triage, 7 for
+defects). The joint multi-task head shares this 256-unit trunk
+and attaches two linear branches; its loss is the sum of the
+triage and defect losses with defect weight 1.0, so the joint
+and cascade configurations are approximately parameter-matched
+apart from the shared trunk. All heads are trained with
+binary cross-entropy with per-class positive weighting
+$w_{\ell} = n^{-}_{\ell}/n^{+}_{\ell}$ computed on the training
+split, using AdamW (learning rate $3\times10^{-4}$, weight decay
+$10^{-4}$), batch size 256, at most 50 epochs, and early stopping
+on calibration-split AUROC with patience 7. Training uses
+mixed-precision autocast on GPU. Each head is trained with five
+seeds $\{0,1,2,3,4\}$; reported head metrics are the mean and
+standard deviation of the per-seed report-split metrics.
+Decision thresholds are selected on the calibration split by
+maximizing F1 over a 99-point grid on $[0.01,0.99]$ (per label
+for the defect head). The guidance policy in the reported
+experiments uses a fixed 0.5 probability cutoff for issuing
+guidance; a calibration-selected per-label alternative is
+evaluated in the threshold-sensitivity analysis.
+
+\subsubsection{Frozen Answerers and Correctness Target}
+\vilt{} is \texttt{dandelin/vilt-b32-finetuned-vqa}; its
+confidence is the maximum softmax probability over the fixed
+answer vocabulary, and questions are truncated to 40 tokens.
+\blip{} is \texttt{Salesforce/blip-vqa-base} decoded greedily
+with at most 10 new tokens; its confidence is the
+length-normalized sequence probability
+\begin{equation}
+c = \exp\!\Big(\tfrac{1}{T}\textstyle\sum_{t=1}^{T} \log p_t\Big),
+\end{equation}
+the geometric mean of the per-token probabilities $p_t$ of the
+$T$ generated non-padding tokens. Answer correctness uses the
+VizWiz consensus rule of \eqref{eq:vizwiz_accuracy} with
+lowercased, whitespace-stripped exact string matching. We note
+explicitly that this is a simplified matcher: the official VizWiz
+evaluation additionally normalizes punctuation, digits, articles,
+and contractions, so our accuracy values can differ slightly from
+official-script values, particularly for the generative answerer.
+All selectors are compared under the same matcher, so
+selective-prediction comparisons are internally consistent.
+
+\subsubsection{Calibration, Risk Models, and Statistics}
+Temperature scaling fits a single scalar by minimizing
+negative log-likelihood with L-BFGS (at most 50 iterations) on
+the calibration split. Defect-conditioned calibration fits one
+temperature per predicted-defect group, falling back to $T=1$
+for groups with fewer than 10 calibration examples. ECE uses 15
+equal-width confidence bins. Learned risk models are logistic
+regressions on standardized features (scikit-learn, LBFGS
+solver, up to 2000 iterations) fit on the calibration split with
+binarized correctness as the target. Confidence intervals use
+2000 unstratified bootstrap resamples (seed 42). Paired
+comparisons resample both scores on identical indices; the
+two-sided $p$-value is twice the smaller tail fraction of the
+bootstrap delta distribution. Benjamini--Hochberg correction is
+applied within each answerer's family of selective-prediction
+tests. The calibration subset is a 30\% carve-out of the joined
+validation split (seed 42), and a runtime guard prevents any
+threshold- or parameter-fitting function from receiving
+report-split data. Experiments ran on Google Colab GPUs
+(A100/L4/T4) with batch sizes auto-scaled per tier; the full
+pipeline completes in a few GPU-hours, dominated by embedding
+extraction and confidence harvesting.
 
 \subsection{Protocol Summary}
 
@@ -429,10 +575,13 @@ universal.
 \label{sec:results}
 
 \subsection{Data Sanity}
-Taken together with the reliability-layer schematic in Figure~\ref{fig:pipeline} and the joined-label structure in Figure~\ref{fig:label_distribution}, the report-split evaluation starts from a deliberately difficult operating point rather than from a tuned end-to-end VQA system. The joined dataset contains 24{,}319 rows, with 20{,}000 training examples and 4{,}319 validation examples (1{,}295 calibration and 3{,}024 report rows). Over the full 24{,}319-row joined dataset, the frozen \vilt{} model obtains mean VizWiz answer accuracy 0.1853 (mean confidence 0.4469) and the frozen \blip{} model obtains 0.1707 (mean confidence 0.3669); on the 3{,}024-row report split used for all selective-prediction results, \vilt{} reaches 0.2540 and \blip{} reaches 0.2106. Both frozen answerers therefore leave substantial reliability headroom, which is exactly the setting we target: not building a stronger answerer, but quantifying when to trust, when to refuse, and how to recover around a fixed one.
+Taken together with the reliability-layer schematic in Figure~\ref{fig:pipeline} and the joined-label structure in Figure~\ref{fig:label_distribution}, the report-split evaluation starts from a deliberately difficult operating point rather than from a tuned end-to-end VQA system. The joined dataset contains 24{,}319 rows, with 20{,}000 training examples and 4{,}319 validation examples (1{,}295 calibration and 3{,}024 report rows). As whole-dataset descriptive statistics, the frozen \vilt{} model obtains mean VizWiz answer accuracy 0.1853 (mean confidence 0.4469) over all 24{,}319 rows and the frozen \blip{} model obtains 0.1707 (mean confidence 0.3669); on the 3{,}024-row report split used for all selective-prediction results, \vilt{} reaches 0.2540 and \blip{} reaches 0.2106. The gap between the full-dataset and report-split accuracies is expected rather than anomalous: the full-dataset figure is dominated by the 20{,}000 training-split rows, and the training and validation portions of VizWiz differ in answerable proportion and question mix; a per-subset breakdown (accuracy and answerable rate for the training, calibration, and report subsets) accompanies the released results manifest.
+% TODO(E8e rerun): insert the per-subset accuracy/answerable-rate table here once
+% regenerated from the locked manifest.
+Both frozen answerers leave substantial reliability headroom, which is exactly the setting we target: not building a stronger answerer, but quantifying when to trust, when to refuse, and how to guide recovery around a fixed one. Their low absolute accuracy also bounds the practical meaning of every operating point reported below, a limitation we return to in Section~\ref{sec:limitations}.
 
-\subsection{Answerability Triage}
-Figure~\ref{fig:backbone_comparison} and Table~\ref{tab:core_results} show that answerability triage is useful but not sufficient on its own. \clip{} performs best for answerability triage, reaching AUROC $0.7926 \pm 0.0005$ and AUPRC $0.8811$. \dinov{} reaches AUROC $0.7769 \pm 0.0005$, while \mobilenet{} reaches AUROC $0.7512 \pm 0.0009$. All three exceed the majority-class F1 baseline of 0.809, with model F1 in the range 0.823--0.836, but the more conservative balanced-accuracy range of 0.59--0.66 shows that triage remains imperfect under class imbalance. Recent reliable-VQA work has shown that abstention quality depends not only on whether a signal correlates with error, but on how finely it orders risk across examples \cite{whitehead2022reliable,dancette2023improving}. Our result is consistent with that distinction: triage captures answerability structure, but it is not the same thing as a universally strong risk-ranking signal.
+\subsection{Visual-Sufficiency Triage}
+Figure~\ref{fig:backbone_comparison} and Table~\ref{tab:core_results} show that image-level triage is useful but not sufficient on its own. \clip{} performs best, reaching AUROC $0.7926 \pm 0.0005$ and AUPRC $0.8811$. \dinov{} reaches AUROC $0.7769 \pm 0.0005$, while \mobilenet{} reaches AUROC $0.7512 \pm 0.0009$. Because these heads see the image only, the reported AUROC measures how much VizWiz answerability is predictable from visual sufficiency alone (Section~\ref{sec:triage_method}); disentangling the visual, linguistic, and interaction components of that score is exactly what the question-conditioned comparison is designed to do. All three backbones exceed the majority-class F1 baseline of 0.809, with model F1 in the range 0.823--0.836, but the more conservative balanced-accuracy range of 0.59--0.66 shows that triage remains imperfect under class imbalance. Recent reliable-VQA work has shown that abstention quality depends not only on whether a signal correlates with error, but on how finely it orders risk across examples \cite{whitehead2022reliable,dancette2023improving}. Our result is consistent with that distinction: triage captures answerability structure, but it is not the same thing as a universally strong risk-ranking signal.
 
 \begin{figure}[t]
     \centering
@@ -453,7 +602,9 @@ For defect diagnosis, the backbone ordering changes. \dinov{} provides the stron
 
 \begin{table*}[t]
     \centering
-    \caption{Core reliability-layer results. Triage AUROC and defect mAP are mean $\pm$ standard deviation over five seeds; $\arr$/$\frr$ show bootstrap 95\% confidence intervals. The final column ($\Delta$AUROC, J$-$C) is the joint-head answerability AUROC minus that of the cascade design.}
+    \caption{Core reliability-layer results. Triage AUROC and defect mAP are mean $\pm$ standard deviation over five training seeds; AUPRC values are five-seed means; $\arr$/$\frr$ show 95\% bootstrap confidence intervals over report examples. The final column ($\Delta$AUROC, J$-$C) is the joint-head answerability AUROC minus that of the cascade design.}
+    % TODO(E8d manifest): state explicitly which seed's (or which aggregate's) defect
+    % predictions feed GDMR/AIRB, and add seed variation for GDMR/AIRB and gated metrics.
     \label{tab:core_results}
     \small
     \begin{tabular}{lcccccc}
@@ -467,26 +618,33 @@ For defect diagnosis, the backbone ordering changes. \dinov{} provides the stron
     \end{tabular}
 \end{table*}
 
-\subsection{Actionable Recovery}
-The recovery results show why explanation should be evaluated separately from risk ranking. \clip{} obtains the highest ungated actionable recovery rate, $\arr$ 0.7196, followed by \dinov{} at 0.6907 and \mobilenet{} at 0.6278. The corresponding ungated false refilm rates are high, near 0.78. As noted in Section~\ref{sec:metrics}, this partly reflects the genuine prevalence of defects among answerable images; framing alone affects 56\% of images, so a truthful defect detector can still generate a high burden proxy if it is decoupled from the answer/refuse decision. Figure~\ref{fig:arr_frr} therefore should not be read as a deployment policy by itself. Instead, it supports our central role separation: defect diagnosis is inherently user-facing and action-oriented, not merely another way of sorting examples by confidence.
+\subsection{Guidance--Defect Agreement and Retake Burden}
+The guidance results show why diagnosis should be evaluated separately from risk ranking. \clip{} obtains the highest ungated guidance--defect match rate, $\arr$ 0.7196, followed by \dinov{} at 0.6907 and \mobilenet{} at 0.6278. Because framing alone is annotated in 56\% of images, trivial policies are a mandatory reference here: an always-framing policy and prevalence-based policies can achieve substantial match rates without learning any image-specific signal, and the learned head must be read against those baselines rather than against zero.
+% TODO(E5d rerun): insert trivial-policy GDMR/AIRB numbers (always-framing,
+% most-prevalent-among-unanswerable, prevalence-sampled, uniform-random, oracle)
+% into this paragraph and Table~\ref{tab:core_results} once computed.
+The corresponding ungated retake burdens are high, near 0.78. As noted in Section~\ref{sec:metrics}, this partly reflects the genuine prevalence of defects among answerable images: a truthful defect detector can still generate a high burden proxy if it is decoupled from the answer/refuse decision. Figure~\ref{fig:arr_frr} therefore should not be read as a deployment policy by itself. Instead, it supports our central role separation: defect diagnosis is inherently user-facing and action-oriented, not merely another way of sorting examples by confidence.
 
-When retake guidance is gated by the refusal decision, the deployment picture becomes much more practical. At a 90\% target coverage under the \vilt{} confidence gate, \clip{} reaches gated $\arr=0.875$ among refused unanswerable examples while reducing gated $\frr$ to 0.050 on answerable examples. Under the \blip{} gate, achieved coverage is 0.883 and \clip{} reaches gated $\arr=0.794$ with gated $\frr=0.102$. Under the \vilt{} gate, the 80\% setting yields achieved coverage 0.821, risk answered 0.698, refusal rate 0.179, and gated $\arr/\frr$ of 0.809/0.120 for \clip{}, 0.759/0.128 for \dinov{}, and 0.668/0.125 for \mobilenet{}; the 70\% setting yields achieved coverage 0.688, risk answered 0.657, refusal rate 0.312, and gated $\arr/\frr$ of 0.758/0.217 for \clip{}, 0.710/0.225 for \dinov{}, and 0.637/0.222 for \mobilenet{}. Table~\ref{tab:gated_recovery} shows that once recovery is conditioned on refusal, the defect head becomes a much more plausible assistive interface component. This is one of our main practical contributions: we evaluate recovery in a deployment-aligned refused-only regime rather than only as an ungated diagnostic.
+When retake guidance is gated by the refusal decision, the burden picture changes substantially, but the gated numbers must be interpreted with their denominators in view. At a 90\% target coverage under the \vilt{} confidence gate, achieved coverage is 0.919, so only 8.1\% of report examples are refused at all. Within that refused subset, \clip{} reaches gated $\arr=0.875$ among refused \emph{unanswerable} examples while gated $\frr$ falls to 0.050 on answerable examples. The 0.875 figure is a conditional guidance precision on a small subset; it is not 87.5\% recovery over all unanswerable examples, most of which are answered rather than refused at this coverage. The end-to-end match coverage over the full unanswerable population (Section~\ref{sec:guidance_metrics}) is correspondingly much lower at high coverage, and we report it together with raw counts.
+% TODO(E5c rerun): insert the four explicit gated quantities with numerator/denominator
+% counts and CIs for each coverage level here and in Table~\ref{tab:gated_recovery}.
+Under the \blip{} gate, achieved coverage is 0.883 and \clip{} reaches gated $\arr=0.794$ with gated $\frr=0.102$. Under the \vilt{} gate, the 80\% setting yields achieved coverage 0.821, selective risk among answered examples 0.698, refusal rate 0.179, and gated $\arr/\frr$ of 0.809/0.120 for \clip{}, 0.759/0.128 for \dinov{}, and 0.668/0.125 for \mobilenet{}; the 70\% setting yields achieved coverage 0.688, selective risk among answered examples 0.657, refusal rate 0.312, and gated $\arr/\frr$ of 0.758/0.217 for \clip{}, 0.710/0.225 for \dinov{}, and 0.637/0.222 for \mobilenet{}. We caution that these operating points are offline policy evaluations, not deployment recommendations: at 90\% coverage the mean answered accuracy is only 0.274 under the adopted matcher, so a real deployment would need to select operating points from target risk levels or explicit costs rather than from coverage alone. Table~\ref{tab:gated_recovery} shows that once guidance is conditioned on refusal, the defect head becomes a more plausible assistive interface component; evaluating it in the refused-only regime, with explicit denominators, is one of our main methodological contributions.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=\linewidth]{F6_arr_frr.pdf}
-    \caption{Actionable recovery from predicted defects. The left panel breaks down recovery by defect type; the right panel contrasts overall actionable recovery against the false refilm rate. The high false refilm rate underscores the need for cost-sensitive, refusal-gated recovery policies.}
+    \caption{Guidance--defect agreement from predicted defects. The left panel breaks down the match rate by defect type; the right panel contrasts the overall match rate against the answerable-image retake burden. The high ungated burden underscores the need for cost-sensitive, refusal-gated guidance policies.}
     \label{fig:arr_frr}
 \end{figure}
 
 \begin{table*}[t]
     \centering
-    \caption{Refusal-gated recovery at calibration-selected confidence thresholds. Coverage and risk are shared across backbones because the refusal gate uses frozen VQA confidence; gated $\arr$ and gated $\frr$ depend on the defect head.}
+    \caption{Refusal-gated guidance at calibration-selected confidence thresholds under the \vilt{} gate. ``Selective risk (answered)'' is the mean error among answered examples. Coverage and risk are shared across backbones because the refusal gate uses frozen VQA confidence; gated $\arr$ and gated $\frr$ depend on the defect head. Gated $\arr$ is conditional on refused unanswerable examples; see Section~\ref{sec:guidance_metrics} for the explicit denominators.}
     \label{tab:gated_recovery}
     \small
     \begin{tabular}{lcccccc}
         \toprule
-        Backbone & Target coverage & Achieved coverage & Risk answered & Refusal rate & Gated $\arr$ & Gated $\frr$ \\
+        Backbone & Target coverage & Achieved coverage & Selective risk (answered) & Refusal rate & Gated $\arr$ & Gated $\frr$ \\
         \midrule
         \clip{}      & 90\% & 0.919 & 0.726 & 0.081 & 0.875 & 0.050 \\
         \dinov{}     & 90\% & 0.919 & 0.726 & 0.081 & 0.817 & 0.055 \\
@@ -504,7 +662,11 @@ When retake guidance is gated by the refusal decision, the deployment picture be
 \end{table*}
 
 \subsection{Selective Prediction}
-The selective-prediction results are the most important negative finding in the paper, and they are also the place where over-generalization would be most misleading. For \vilt{}, global confidence is already the strongest risk-ranking signal we evaluated. It achieves $\aurc$ 0.5341 on the report split, whereas a random ordering yields 0.7460. Temperature scaling leaves the ranking unchanged and slightly worsens expected calibration error on the report split, from 0.194 raw to 0.202 scaled. Defect-conditioned calibration produces small and statistically unsupported $\aurc$ changes ($p \geq 0.29$ across backbones), and learned confidence-plus-defect models are also unsupported ($p \geq 0.41$). Triage alone is much worse than \vilt{} confidence for all backbones, with improvement $-0.176$ to $-0.185$ and $p<0.001$. Learned confidence-plus-triage and full-stack models produce only small gains that do not survive BH-FDR correction.
+The selective-prediction results are the most important negative finding in the paper, and they are also the place where over-generalization would be most misleading. For \vilt{}, global confidence is already the strongest risk-ranking signal we evaluated. It achieves $\aurc$ 0.5341 on the report split, whereas a random ordering yields 0.7460.
+% TODO(E8d manifest): Figure 7 currently displays 0.5357/0.7548 for the same quantities;
+% regenerate prose, tables, and figures from the locked manifest so a single definitive
+% value appears everywhere, and reconcile before submission.
+Because global temperature scaling is monotonic, it cannot change this ranking by construction (Section~\ref{sec:metrics}); as a calibration diagnostic it slightly worsens expected calibration error on the report split, from 0.194 raw to 0.202 scaled. Defect-conditioned calibration produces small and statistically unsupported $\aurc$ changes ($p \geq 0.29$ across backbones), and learned confidence-plus-defect models are also unsupported ($p \geq 0.41$). Triage alone is much worse than \vilt{} confidence for all backbones, with improvement $-0.176$ to $-0.185$ and $p<0.001$. Learned confidence-plus-triage and full-stack models produce only small gains that do not survive BH-FDR correction.
 % TODO(pending E7/E7b rerun on corrected snapshot): the 22-test family currently contains
 % 3 duplicate tests (defect-conditioned calibration == defect group temperature, per backbone)
 % and a p-value bug in the global_logistic_confidence tests (p=2.0). Update the family count,
@@ -512,9 +674,12 @@ The selective-prediction results are the most important negative finding in the 
 % deltas/p-values once the rerun lands. The qualitative conclusion is expected to be unchanged.
 Across all 22 \vilt{} selective-prediction tests in this family, no positive improvement over global confidence remains significant at FDR 0.05. This behavior is consistent with prior reliable-VQA findings that good abstention depends on the quality of the base correctness score, and it is also compatible with work showing that discriminative posteriors can remain reasonably calibratable even when raw confidence is imperfect \cite{whitehead2022reliable,dancette2023improving,khan2024consistency,srinivasan2024selective,guo2017calibration,desai2020calibration}. Our contribution here is the honest negative result: auxiliary visual signals did \emph{not} beat a stronger discriminative confidence once correction for multiple testing was enforced.
 
-The \blip{} robustness analysis changes the interpretation without changing the standard of evidence. \blip{}-VQA-base has report accuracy 0.2106 and a weaker global-confidence ranking, with $\aurc=0.6242$. In this setting, auxiliary reliability signals do help. With \clip{} defects, a confidence-plus-predicted-defects model improves $\aurc$ by $+0.0153$, and the full stack improves $\aurc$ by $+0.0179$; both survive BH-FDR correction. With \mobilenet{} defects, the corresponding improvements are $+0.0137$ and $+0.0172$, also significant after correction. Confidence-plus-triage improves \blip{} risk ranking for all three backbones, from $+0.0046$ to $+0.0069$. \dinov{} full-stack reaches $+0.0090$ with $p=0.043$, but does not survive FDR; triage alone remains much worse than confidence; and the ground-truth-defect oracle does not help \blip{}, with $-0.0007$ and $p=0.82$. The most careful interpretation is therefore not that ``defects help selective prediction'' in general, but that learned continuous auxiliary signals can improve a weaker base confidence signal. That reading is plausible in light of newer evidence that autoregressive or sequence-level confidence can be poorly calibrated at inference, that raw generation likelihoods can be weak proxies for answer quality, and that token-level or self-evaluation alternatives can sometimes correlate better with correctness \cite{wang2020inferencecalibration,ren2023selfevaluation,wang2024myanswerisc,groot2024overconfidence}. Our contribution is to show that this generative-confidence weakness manifests concretely in assistive VQA, but only for the weaker model and only under corrected testing.
+The \blip{} robustness analysis changes the interpretation without changing the standard of evidence. \blip{}-VQA-base has report accuracy 0.2106 and a weaker global-confidence \emph{ranking}, with $\aurc=0.6242$; we phrase this carefully, because a worse AURC establishes a weaker correctness-ranking signal on the evaluated report split, not necessarily worse calibration, which is a different property. In this setting, auxiliary reliability signals do help. With \clip{} defects, a confidence-plus-predicted-defects model improves $\aurc$ by $+0.0153$, and the full stack improves $\aurc$ by $+0.0179$; both survive BH-FDR correction. With \mobilenet{} defects, the corresponding improvements are $+0.0137$ and $+0.0172$, also significant after correction. Confidence-plus-triage improves \blip{} risk ranking for all three backbones, from $+0.0046$ to $+0.0069$. \dinov{} full-stack reaches $+0.0090$ with $p=0.043$, but does not survive FDR; triage alone remains much worse than confidence; and the ground-truth-defect oracle does not help \blip{}, with $-0.0007$ and $p=0.82$. The most careful interpretation is therefore not that ``defects help selective prediction'' in general, but that learned continuous auxiliary signals can improve a weaker base confidence signal. That reading is plausible in light of newer evidence that autoregressive or sequence-level confidence can be poorly calibrated at inference, that raw generation likelihoods can be weak proxies for answer quality, and that token-level or self-evaluation alternatives can sometimes correlate better with correctness \cite{wang2020inferencecalibration,ren2023selfevaluation,wang2024myanswerisc,groot2024overconfidence}. Our contribution is to show that this generative-confidence weakness manifests concretely in assistive VQA, but only for the weaker model and only under corrected testing.
 
-Figures~\ref{fig:calibration_risk} and \ref{fig:selective_diagnostic}, together with Tables~\ref{tab:selective} and \ref{tab:blip_selective}, make the role separation visually explicit. For \vilt{}, Figure~\ref{fig:calibration_risk} shows that temperature scaling does not materially alter the risk-coverage ordering, and Figure~\ref{fig:selective_diagnostic} shows that positive bars for auxiliary models are too small or too unstable to survive correction. For \blip{}, the same diagnostic figure shows larger and corrected gains for predicted-defect and full-stack models, while the oracle result stays null. That oracle null matters: if ground-truth defect labels themselves do not improve ranking, then the useful signal is not a simple defect taxonomy ordering, but the richer continuous description encoded by the learned predicted signals. This is precisely where our paper adds something new to the literature: it separates explanatory value, recovery value, and ranking value instead of assuming that all three must rise and fall together.
+Figures~\ref{fig:calibration_risk} and \ref{fig:selective_diagnostic}, together with Tables~\ref{tab:selective} and \ref{tab:blip_selective}, make the role separation visually explicit. For \vilt{}, Figure~\ref{fig:calibration_risk} shows that temperature scaling does not materially alter the risk-coverage ordering, and Figure~\ref{fig:selective_diagnostic} shows that positive bars for auxiliary models are too small or too unstable to survive correction. For \blip{}, the same diagnostic figure shows larger and corrected gains for predicted-defect and full-stack models, while the oracle result stays null. That oracle null constrains the interpretation: whatever the learned predicted scores contribute, it is not the binary defect taxonomy itself. We resist the stronger reading that the predicted scores necessarily encode a ``richer description of defects.'' Continuous predicted scores are functions of the backbone embedding, so their gain may equally reflect embedding-derived visual difficulty, label uncertainty, class prevalence, or correlations with answerability inherited from training. Distinguishing these explanations requires controls---risk models built on thresholded predicted labels, on backbone embeddings without defect supervision, and on heads trained against permuted defect targets with identical capacity---which we specify in the released pipeline and leave to the revised analysis.
+% TODO(E7e rerun): report the control results (thresholded labels / unsupervised
+% embedding features / permuted-target heads) and update this interpretation.
+What the present evidence does establish is a separation of roles: explanatory value, guidance value, and ranking value need not rise and fall together.
 
 \begin{figure*}[t]
     \centering
@@ -593,18 +758,18 @@ Figures~\ref{fig:calibration_risk} and \ref{fig:selective_diagnostic}, together 
     \end{tabular}
 \end{table*}
 
-\subsection{Qualitative Refusal Behavior}
-Figure~\ref{fig:qualitative} is useful because it shows why the paper should not be read as only a metric-improvement exercise. The grid is rule-sampled from the report split using fixed seed 7 rather than hand-picked, and its rows separate high-confidence correct answers, high-confidence wrong answers, good refusals with matching defect-based retake guidance, and wrong-reason refusals. The second row matters most from an assistive perspective: visually fragile examples can still elicit confident but wrong answers, which is exactly the failure mode that motivates refusal. The bottom row shows the remaining limitation just as clearly: the system can refuse honestly yet still offer the wrong visual reason. Recent work on VQA reliability and multimodal uncertainty likewise emphasizes that identifying uncertainty is not the same as explaining it \cite{whitehead2022reliable,khan2024consistency,groot2024overconfidence}. Our contribution is to place those two requirements in the same evaluation loop by measuring both whether the system should refuse and whether its explanation supports recovery.
-
-\begin{figure*}[t]
+\begin{figure*}[!tp]
     \centering
     \includegraphics[width=0.95\textwidth]{F9_qualitative_grid.pdf}
-    \caption{Rule-sampled qualitative examples from the report split (QUAL\_SEED=7). Rows show high-confidence correct answers, high-confidence wrong answers, good refusals with matching defect-based retake guidance, and wrong-reason refusals. The figure illustrates both the motivation for refusal and the remaining challenge of explaining the correct visual failure mode.}
+    \caption{Rule-sampled qualitative examples from the report split (QUAL\_SEED=7). Rows show high-confidence correct answers, high-confidence wrong answers, good refusals with matching defect-based retake guidance, and wrong-reason refusals. The figure illustrates both the motivation for refusal and the remaining challenge of identifying the correct visual failure mode.}
     \label{fig:qualitative}
 \end{figure*}
 
+\subsection{Qualitative Refusal Behavior}
+Figure~\ref{fig:qualitative} is useful because it shows why the paper should not be read as only a metric-improvement exercise. The grid is rule-sampled from the report split using fixed seed 7 rather than hand-picked, and its rows separate high-confidence correct answers, high-confidence wrong answers, good refusals with matching defect-based retake guidance, and wrong-reason refusals. The second row matters most from an assistive perspective: visually fragile examples can still elicit confident but wrong answers, which is exactly the failure mode that motivates refusal. The bottom row shows the remaining limitation just as clearly: the system can refuse honestly yet still offer the wrong visual reason. Recent work on VQA reliability and multimodal uncertainty likewise emphasizes that identifying uncertainty is not the same as explaining it \cite{whitehead2022reliable,khan2024consistency,groot2024overconfidence}. Our contribution is to place those two requirements in the same evaluation loop by measuring both whether the system should refuse and whether its guidance targets an annotated defect.
+
 \subsection{Joint Versus Cascade}
-Finally, the architectural comparison shows that some design choices matter less than others. The joint head gives small but consistent AUROC gains over the cascade design: $+0.0013$ for \clip{}, $+0.0028$ for \dinov{}, and $+0.0037$ for \mobilenet{}. These gains are real but modest, suggesting that backbone choice and base-confidence quality matter more than whether answerability and defect prediction are coupled in a single head. That synthesis matches the rest of the section: backbone quality affects triage and diagnosis, base VQA confidence determines whether auxiliary signals help ranking, and defect heads remain valuable for explanation and recovery even when their ranking gains are small. This is the practical conclusion our Results section is designed to support.
+Finally, the architectural comparison shows that some design choices matter less than others. The joint head gives small observed AUROC gains over the cascade design: $+0.0013$ for \clip{}, $+0.0028$ for \dinov{}, and $+0.0037$ for \mobilenet{}. We have not established these differences with paired confidence intervals, so we treat them as small observed gains rather than confirmed effects; the joint and cascade heads are approximately parameter-matched (Section~\ref{sec:implementation}) with unit multi-task loss weights. The pattern suggests that backbone choice and base-confidence quality matter more than whether triage and defect prediction are coupled in a single head. That synthesis matches the rest of the section: backbone quality affects triage and diagnosis, base VQA confidence determines whether auxiliary signals help ranking, and defect heads remain valuable for explanation and recovery even when their ranking gains are small. This is the practical conclusion our Results section is designed to support.
 
 \section{Discussion}
 \label{sec:discussion}
@@ -615,12 +780,25 @@ Why this separation holds strongly for \vilt{} but less strongly for \blip{} is 
 
 The \blip{} results also clarify why predicted defects can help while the ground-truth-defect oracle does not. Recent multimodal reliability work increasingly favors richer auxiliary signals---for example, consistency under perturbation, semantic agreement across responses, or explicitly calibrated verbal confidence---rather than assuming that a single symbolic attribute will linearly order risk \cite{khan2024consistency,zhang2024vluncertainty,xuan2025seeing}. That perspective aligns with our finding that the gain for \blip{} comes from learned interactions with continuous predicted signals, not from defect labels as an oracle ordering. In other words, predicted defects appear to matter less as discrete declarations of ``the'' failure mode and more as soft descriptors of visual difficulty that can be fused with a weaker confidence signal. Our contribution is to demonstrate this distinction in an assistive VQA setting with human-labeled real-world defects: learned predicted signals can improve selective prediction for a weaker answerer, even when ground-truth defect labels by themselves do not.
 
-The recovery results make the deployment implication more concrete. VizWiz images can remain answerable despite containing genuine quality defects \cite{gurari2018vizwiz,chiu2020assessing}, so an ungated diagnosis module naturally produces a high refilm burden if it is allowed to recommend retakes on every example. That is why refusal-gated recovery is the right operating view for this setting: retake guidance should be issued only after the system has already decided that answering would be unsafe, so that diagnosis supports abstention instead of competing with it. Under that design, the point of defect prediction is not to replace confidence, but to make refusals more honest and more actionable. Our contribution is therefore not merely a better abstention score, but a deployment-aligned reliability layer that separates ranking, explanation, and recovery, and shows that the best balance among them remains model-dependent.
+The guidance results make the practical implication more concrete. VizWiz images can remain answerable despite containing genuine quality defects \cite{gurari2018vizwiz,chiu2020assessing}, so an ungated diagnosis module naturally produces a high retake burden if it is allowed to recommend retakes on every example. That is why refusal-gated guidance is the right operating view for this setting: retake guidance should be issued only after the system has already decided that answering would be unsafe, so that diagnosis supports abstention instead of competing with it. Under that design, the point of defect prediction is not to replace confidence, but to attach an interpretable, potentially actionable reason to each refusal. Our contribution is therefore not merely a better abstention score, but a modular offline evaluation of a reliability layer that separates ranking, defect identification, and guidance, and shows that the best balance among them remains model-dependent within the two answerers studied.
 
 \section{Limitations}
 \label{sec:limitations}
 
-This study is limited to the examples obtained by joining the
+The most consequential design limitation is that the triage and
+defect heads are conditioned on the image alone. VizWiz
+answerability is a property of the image--question pair, so the
+reported triage AUROC measures image-level visual sufficiency
+rather than pair-level answerability (Section~\ref{sec:triage_method}),
+and the reported score cannot separate what is attributable to
+visual defects, to question language, or to their interaction.
+The question-conditioned comparison specified in the released
+pipeline---image-only linear probe and MLP, question-only head,
+concatenation, image--question fusion, and models that add VQA
+confidence---is required before the triage component can be
+described as answerability prediction.
+
+This study is further limited to the examples obtained by joining the
 VizWiz-VQA and VizWiz-QualityIssues train and validation splits.
 The hidden VizWiz test answers are not available for evaluation,
 and the join retains only images for which both answerability and
@@ -709,7 +887,7 @@ user capture a better image. Likewise, \frr{} measures the
 frequency with which an answerable example would trigger a
 retake suggestion; it does not directly measure frustration,
 physical effort, time, repeated capture attempts, or abandonment.
-The refusal-gated results provide a more deployment-aligned
+The refusal-gated results provide a more policy-relevant
 burden estimate than ungated diagnosis, but a longitudinal user
 study is still required to measure whether guidance improves the
 next image and whether users consider the intervention worthwhile.
@@ -734,17 +912,20 @@ the evidence is small or the question requires text recognition
 camera instructions, question-aware diagnosis, and evaluation of
 successive retake attempts therefore remain future work. The
 present contribution is intentionally narrower: it establishes a
-lightweight image-level layer for deciding when to trust, explaining
-likely capture failures, and evaluating actionable recovery without
+lightweight image-level layer for deciding when to trust, identifying
+likely capture defects, and evaluating guidance--defect agreement without
 claiming to resolve every source of VQA error.
 
 \section{Conclusion} \label{sec:conclusion}
 
-We have introduced a lightweight reliability layer for assistive VQA that leverages real answerability and image-quality labels from the VizWiz dataset to predict when a blind user's visual question should be answered or declined, and why. Small prediction heads on frozen visual encoders (\clip{}, \dinov{}, \mobilenet{}) can effectively diagnose image defects (blur, lighting, framing, etc.) and forecast answerability, supporting guided retake instructions. In end-to-end evaluation, these predictions enable high actionable recovery when used judiciously: for example, gating retake advice on a 90\% coverage refusal threshold yields \clip{}-gated \arr{} 0.875 at \frr{} 0.050 under \vilt{}.
+We have introduced a lightweight reliability layer for assistive VQA that leverages real answerability and image-quality labels from the VizWiz dataset to study when a blind user's visual question should be answered or declined, and which annotated capture defect may explain a declination. Small prediction heads on frozen visual encoders (\clip{}, \dinov{}, \mobilenet{}) can diagnose image defects (blur, lighting, framing, and related conditions) and estimate image-level visual sufficiency, supporting deterministic retake instructions. In our modular offline evaluation, these predictions achieve high guidance--defect agreement when used judiciously: for example, gating retake advice on a 90\% coverage refusal threshold yields \clip{}-gated \arr{} 0.875 at \frr{} 0.050 under the \vilt{} gate, with the conditional-denominator caveats detailed in Section~\ref{sec:guidance_metrics}.
 
-At the same time, our selective-prediction analysis reveals that the utility of auxiliary signals depends on the VQA model. For the discriminative \vilt{} model (which chooses from a fixed vocabulary), its max-softmax confidence is already well-aligned with correctness, so defect and triage features provide no significant AURC gain after BH-FDR adjustment. By contrast, the generative \blip{} model's length-normalized sequence confidence is less calibrated, and its risk ranking is significantly improved by learned combinations of confidence, triage, and predicted defects. In other words, augmenting confidence with auxiliary cues matters primarily when the base confidence is unreliable. This observation aligns with recent findings in VQA calibration: open-ended generation tends to be more overconfident than closed-set classification, and as Whitehead et al. showed, naively thresholding a model's softmax can limit coverage severely \cite{whitehead2022reliable}. In our case, \vilt{}'s base confidence needed almost no correction, whereas \blip{}'s did.
+At the same time, our selective-prediction analysis reveals that the utility of auxiliary signals depends on the VQA model, at least within the two answerers evaluated. For the discriminative \vilt{} model (which chooses from a fixed vocabulary), max-softmax confidence is already well-aligned with correctness on this data, so defect and triage features provide no significant AURC gain after BH-FDR adjustment. By contrast, the generative \blip{} model's length-normalized sequence probability is a weaker correctness-ranking signal on the evaluated report split, and its risk ranking is significantly improved by learned combinations of confidence, triage, and predicted defects. In other words, augmenting confidence with auxiliary cues mattered primarily when the base ranking signal was weak. This observation is consistent with recent findings in VQA reliability: open-ended generation tends toward overconfidence relative to closed-set classification, and as Whitehead et al. showed, naively thresholding a model's softmax can limit coverage severely \cite{whitehead2022reliable}.
 
-The practical lesson is thus to treat defect diagnosis as an explanation and fallback rather than a blanket substitute for confidence-based ranking. Start with the VQA model's confidence as the primary reliability signal, and only introduce learned auxiliary selectors when empirical calibration (on a held-out split) indicates that confidence is weak. When an answer is refused, the defect head can then give the user an interpretable reason and a concrete retake suggestion. This design neither overstates the power of defect labels nor discards them---it uses them exactly when and how they help. In future work, stronger vision-language models, richer language-based uncertainty measures, and real-world user studies should be explored to further validate and refine these reliability-layer strategies.
+The practical lesson is thus to treat defect diagnosis as an interpretable refusal companion rather than a blanket substitute for confidence-based ranking. Start with the VQA model's confidence as the primary reliability signal, and only introduce learned auxiliary selectors when held-out evaluation indicates that the base ranking is weak. When an answer is refused, the defect head can then give the user a likely visual reason and a concrete retake suggestion. This design neither overstates the power of defect labels nor discards them. The immediate next steps are those the analysis itself demands: question-conditioned triage, trivial-policy guidance baselines, threshold sensitivity, and evaluation with stronger contemporary vision-language answerers---followed by the study this offline protocol cannot replace, a retake study with blind and low-vision users measuring whether the guidance actually improves the next capture.
+
+\section*{Ethics and Data Statement}
+This study uses only the publicly released VizWiz-VQA and VizWiz-QualityIssues datasets and inherits their consent and collection terms; no new data were collected from users, and no interaction with blind or low-vision participants took place. Images taken by blind photographers can inadvertently contain sensitive visible content, including documents, screens, medication labels, and barcodes. We therefore restrict qualitative displays to a rule-sampled grid, reviewed for inadvertent disclosure of personally identifying information before publication, and we do not redistribute the images themselves. The defect-to-guidance mapping is a research artifact evaluated offline; it has not been validated with the intended users, and the reported proxies must not be interpreted as evidence of real-world benefit or safety for BLV users. Any deployment would additionally require attention to on-device privacy, since the images involved are captured in users' homes and daily lives.
 
 \section*{Data and Code Availability}
 Both datasets are publicly available from the VizWiz project \cite{vizwizvqaweb,vizwizqualityweb}. The full experiment pipeline (data assembly, training, calibration, selective-prediction diagnostics, recovery metrics, and figure generation), including cached-result manifests with git hashes for every reported number, is available at \url{https://github.com/meteorboyF/VQA-paper}.
@@ -772,23 +953,25 @@ is currently pursuing his Bachelor of Science (B.Sc.) in Computer Science and En
 is currently pursuing her Bachelor of Science (B.Sc.) in Computer Science and Engineering from United International University (UIU), with a specialization in data science. Her professional interests are focused on software architecture, system design, and the implementation of comprehensive testing strategies through Software Quality Assurance (SQA).
 \end{IEEEbiography}
 
-% TODO: PLACEHOLDER BIOGRAPHY — current text is a copy of Shinthia Rahman's bio with
-% incorrect pronouns. Replace with Md. Abdullah Al Nafiz's real biography before submission.
+% TODO(AUTHOR APPROVAL): draft bio rewritten from the Shinthia-copy placeholder.
+% Md. Abdullah Al Nafiz must confirm the content and preferred pronouns before submission.
 \begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Author Photo/Md.Abdullah Al Nafiz.jpg}}]{Md. Abdullah Al Nafiz}
-is currently pursuing her Bachelor of Science (B.Sc.) in Computer Science and Engineering from United International University (UIU), with a specialization in data science. Her professional interests are focused on software architecture, system design, and the implementation of comprehensive testing strategies through Software Quality Assurance (SQA).
+is currently pursuing the Bachelor of Science (B.Sc.) degree in Computer Science and Engineering at United International University (UIU), Dhaka, Bangladesh, with a specialization in data science. Research interests include machine learning, data science, and software engineering.
 \end{IEEEbiography}
 
-% TODO: PLACEHOLDER BIOGRAPHY — template text (Kyung Hee PhD 2013 / Professor since 2020 /
-% 130 articles) is identical to the Jahangir block below and almost certainly belongs to
-% neither author. Replace with Farhan Anan Himu's real biography before submission.
-\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Author Photo/Farhan Anan Himu.png}}]{Farhan Anan Himu (Member, IEEE)}
-received the Ph.D. degree in Computer Engineering from Kyung Hee University, South Korea, in 2013. He has been serving as a Professor in the Department of Computer Science and Engineering, United International University (UIU), Dhaka, Bangladesh, since January 2020. He has published around 130 research articles over the past decade. His research interests include the smart Internet of Things, IP based wireless sensor networks, WSN virtualization, cloud computing, and green computing.
+% TODO(AUTHOR APPROVAL): corrected from duplicated template text (which wrongly claimed a
+% Kyung Hee PhD / Professorship / 130 articles). Title per UIU CSE faculty listing:
+% Lecturer. Farhan Anan Himu must confirm degree details, IEEE membership status, and
+% research interests before submission.
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Author Photo/Farhan Anan Himu.png}}]{Farhan Anan Himu}
+is a Lecturer in the Department of Computer Science and Engineering, United International University (UIU), Dhaka, Bangladesh. % TODO: degree(s), year(s), institution(s), and research interests to be supplied and approved by the author.
 \end{IEEEbiography}
 
-% TODO: PLACEHOLDER BIOGRAPHY — template text with incorrect pronouns and credentials.
-% Replace with Khushnur Binte Jahangir's real biography before submission.
-\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Author Photo/Khushnur Binte Jahangir.jpg}}]{Khushnur Binte Jahangir (Member, IEEE)}
-received the Ph.D. degree in Computer Engineering from Kyung Hee University, South Korea, in 2013. He has been serving as a Professor in the Department of Computer Science and Engineering, United International University (UIU), Dhaka, Bangladesh, since January 2020. He has published around 130 research articles over the past decade. His research interests include the smart Internet of Things, IP based wireless sensor networks, WSN virtualization, cloud computing, and green computing.
+% TODO(AUTHOR APPROVAL): corrected from duplicated template text with wrong credentials and
+% pronouns. Title per UIU CSE faculty listing: Assistant Professor. Khushnur Binte Jahangir
+% must confirm degree details, IEEE membership status, and research interests before submission.
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Author Photo/Khushnur Binte Jahangir.jpg}}]{Khushnur Binte Jahangir}
+is an Assistant Professor in the Department of Computer Science and Engineering, United International University (UIU), Dhaka, Bangladesh. % TODO: degree(s), year(s), institution(s), and research interests to be supplied and approved by the author.
 \end{IEEEbiography}
 
 \EOD

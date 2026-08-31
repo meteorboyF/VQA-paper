@@ -129,8 +129,7 @@ def main():
                                                      prevalence_una.tolist())),
            "n_report": n, "n_unanswerable": int((ans == 0).sum()),
            "n_answerable": int((ans == 1).sum())}
-    with open(required_artifacts()[0], "w") as f:
-        json.dump(out, f, indent=2)
+    expstate.write_json_atomic(required_artifacts()[0], out)
 
     print("\n[E5d] baseline GDMR/AIRB on report split:")
     for name, m in results.items():

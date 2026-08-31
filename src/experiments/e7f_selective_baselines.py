@@ -76,13 +76,12 @@ def main():
         out_json = os.path.join(RESULTS_E7F, f"baselines_{gate}.json")
         if not os.path.exists(pq):
             print(f"[E7f] gate '{gate}' predictions missing; skipping")
-            with open(out_json, "w") as f:
-                json.dump({"gate": gate, "skipped": True}, f)
+            expstate.write_json_atomic(out_json, {"gate": gate, "skipped": True})
             progress.step(pbar, f"{gate} skipped")
             continue
-        if os.path.exists(out_json) and not config.FORCE_RERUN:
-            with open(out_json) as f:
-                all_results[gate] = json.load(f)
+        cached = None if config.FORCE_RERUN else expstate.load_json_valid(out_json)
+        if cached is not None:
+            all_results[gate] = cached
             progress.step(pbar, f"{gate} cache reused")
             continue
 
@@ -152,8 +151,7 @@ def main():
 
         result = {"gate": gate, "global_confidence_aurc": float(global_aurc),
                   "baselines": rows}
-        with open(out_json, "w") as f:
-            json.dump(result, f, indent=2)
+        expstate.write_json_atomic(out_json, result)
         all_results[gate] = result
 
         print(f"\n[E7f] {gate} (global AURC={global_aurc:.4f})")

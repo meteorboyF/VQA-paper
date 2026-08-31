@@ -141,9 +141,9 @@ def main():
 
         for bb in config.BACKBONES:
             out_json = os.path.join(RESULTS_E7E, f"controls_{gate}_{bb}.json")
-            if os.path.exists(out_json) and not config.FORCE_RERUN:
-                with open(out_json) as f:
-                    all_results[f"{gate}_{bb}"] = json.load(f)
+            cached = None if config.FORCE_RERUN else expstate.load_json_valid(out_json)
+            if cached is not None:
+                all_results[f"{gate}_{bb}"] = cached
                 progress.step(pbar, f"{gate}/{bb} cache reused")
                 continue
 
@@ -152,14 +152,17 @@ def main():
             pd_cal = _sigmoid(defect_logits[cal_pos])
             pd_rep = _sigmoid(defect_logits[rep_pos])
 
-            # E4b thresholds if available, else 0.5 everywhere.
+            # E4b thresholds if available and readable, else 0.5 everywhere.
             e4b_path = os.path.join(config.RESULTS, "E4b_thresholds",
                                     f"thresholds_{bb}.json")
-            if os.path.exists(e4b_path):
-                with open(e4b_path) as f:
-                    taus = np.array([json.load(f)["per_label_thresholds"][d]
-                                     for d in DEFECT_NAMES])
+            e4b = expstate.load_json_valid(e4b_path)
+            if e4b is not None:
+                taus = np.array([e4b["per_label_thresholds"][d]
+                                 for d in DEFECT_NAMES])
             else:
+                print(f"[E7e] {bb}: E4b thresholds missing or unreadable "
+                      f"({e4b_path}); falling back to 0.5 cutoffs. Rerun E4b "
+                      "for cal-selected thresholds.")
                 taus = np.full(len(DEFECT_NAMES), 0.5)
 
             # Embedding PCA features (fit on cal only; frozen-knob).
@@ -209,8 +212,7 @@ def main():
             result = {"gate": gate, "backbone": bb,
                       "global_confidence_aurc": float(global_aurc),
                       "variants": rows}
-            with open(out_json, "w") as f:
-                json.dump(result, f, indent=2)
+            expstate.write_json_atomic(out_json, result)
             all_results[f"{gate}_{bb}"] = result
 
             print(f"\n[E7e] gate={gate} bb={bb} (global AURC={global_aurc:.4f})")

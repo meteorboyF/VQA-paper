@@ -138,9 +138,9 @@ def main():
     all_results = {}
     for bb in config.BACKBONES:
         out_json = os.path.join(RESULTS_E10, f"question_triage_{bb}.json")
-        if os.path.exists(out_json) and not config.FORCE_RERUN:
-            with open(out_json) as f:
-                all_results[bb] = json.load(f)
+        cached = None if config.FORCE_RERUN else expstate.load_json_valid(out_json)
+        if cached is not None:
+            all_results[bb] = cached
             print(f"[E10] cache hit: {out_json}")
             progress.step(pbar, f"{bb} cache reused")
             continue
@@ -200,8 +200,7 @@ def main():
             d_entry["bh_fdr_significant"] = bool(rej)
         bb_res["paired_deltas"] = deltas
 
-        with open(out_json, "w") as f:
-            json.dump(bb_res, f, indent=2)
+        expstate.write_json_atomic(out_json, bb_res)
         all_results[bb] = bb_res
         progress.step(pbar, f"{bb} question-triage variants done")
 

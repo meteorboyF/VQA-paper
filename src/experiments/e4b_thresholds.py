@@ -104,9 +104,9 @@ def main():
     all_results = {}
     for bb in config.BACKBONES:
         out_json = os.path.join(RESULTS_E4B, f"thresholds_{bb}.json")
-        if os.path.exists(out_json) and not config.FORCE_RERUN:
-            with open(out_json) as f:
-                all_results[bb] = json.load(f)
+        cached = None if config.FORCE_RERUN else expstate.load_json_valid(out_json)
+        if cached is not None:
+            all_results[bb] = cached
             progress.step(pbar, f"{bb} cache reused")
             continue
 
@@ -154,8 +154,7 @@ def main():
             "policy_global_0.5": {"GDMR": g05, "AIRB": a05},
             "policy_per_label_cal": {"GDMR": gpl, "AIRB": apl},
         }
-        with open(out_json, "w") as f:
-            json.dump(result, f, indent=2)
+        expstate.write_json_atomic(out_json, result)
         all_results[bb] = result
         print(f"[E4b] {bb}: 0.5 policy GDMR/AIRB={g05:.4f}/{a05:.4f}  "
               f"per-label policy={gpl:.4f}/{apl:.4f}")

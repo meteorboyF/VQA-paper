@@ -39,14 +39,44 @@ def is_done(exp_id: str, results_dir: str, required=()) -> bool:
     except Exception:
         print(f"[{exp_id}] DONE marker unreadable - rerunning: {marker}")
         return False
-    missing = [p for p in required if not os.path.exists(p)]
+    # A 0-byte artifact means a write was interrupted (Drive flush hazard):
+    # treat it exactly like a missing file so the experiment reruns.
+    missing = [p for p in required
+               if not os.path.exists(p) or os.path.getsize(p) == 0]
     if missing:
         print(f"[{exp_id}] DONE marker found but {len(missing)} required "
-              f"artifact(s) are missing - rerunning.")
+              f"artifact(s) are missing or empty - rerunning.")
         for p in missing[:8]:
-            print(f"  missing: {p}")
+            print(f"  missing/empty: {p}")
         return False
     return True
+
+
+def write_json_atomic(path: str, obj) -> None:
+    """Write JSON via tmp-file + fsync + atomic replace.
+
+    Plain json.dump(open(path, 'w')) on a Drive-backed path can leave a
+    0-byte or truncated file if the runtime dies or Drive flushes lazily;
+    downstream readers then crash with JSONDecodeError. Atomic replace
+    guarantees the final path is either absent or complete.
+    """
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(obj, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def load_json_valid(path: str):
+    """Return parsed JSON, or None if the file is missing/empty/corrupt."""
+    try:
+        if not os.path.exists(path) or os.path.getsize(path) == 0:
+            return None
+        with open(path) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
 
 
 def mark_done(exp_id: str, results_dir: str, artifacts=(), extra=None) -> str:
